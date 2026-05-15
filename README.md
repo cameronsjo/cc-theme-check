@@ -83,6 +83,7 @@ cc-theme-check --all                    show everything
 | `--all` | Everything above |
 | `--watch` | Re-render on every theme-file save (live reload) |
 | `--edit` | Interactive TUI forge with side-by-side preview |
+| `--init [slug]` | Scaffold a new theme JSON from a starter template |
 | `--ghostty <path>` | Provide Ghostty theme for accurate canvas bg + ANSI palette |
 | `--bg <#hex>` | Override canvas bg for contrast math |
 

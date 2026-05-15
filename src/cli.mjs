@@ -13,18 +13,20 @@ ${chalk.bold('Usage')}
   cc-theme-check path/to/my-theme.json          check a specific theme file
   cc-theme-check --watch                         live reload on theme-file save
   cc-theme-check --edit                          interactive TUI forge
+  cc-theme-check --init [slug]                   scaffold a new theme
   cc-theme-check --all                           show everything
 
 ${chalk.bold('Flags')}
-  --audit        Show full WCAG contrast breakdown
-  --palette      Show ANSI 16-color palette (requires --ghostty)
-  --tokens       Show all 69 token swatches with contrast ratios
-  --all          Show everything
-  --watch        Re-render on theme-file change (Ctrl-C to exit)
-  --edit         Open the Ink-based TUI forge (needs ink + react)
-  --ghostty <p>  Provide Ghostty theme for ANSI palette + canvas bg
-  --bg <#hex>    Override terminal background for contrast math
-  --help         Show this message
+  --audit         Show full WCAG contrast breakdown
+  --palette       Show ANSI 16-color palette (requires --ghostty)
+  --tokens        Show all 69 token swatches with contrast ratios
+  --all           Show everything
+  --watch         Re-render on theme-file change (Ctrl-C to exit)
+  --edit          Open the Ink-based TUI forge (needs ink + react)
+  --init [slug]   Scaffold a new theme JSON from a template
+  --ghostty <p>   Provide Ghostty theme for ANSI palette + canvas bg
+  --bg <#hex>     Override terminal background for contrast math
+  --help          Show this message
 
 ${chalk.bold('Default output')}
   Header + mock conversation + 3-line contrast summary.
@@ -38,6 +40,7 @@ function parseArgs(argv) {
   const opts = {
     ghosttyPath: null, bgOverride: null, themePath: null,
     audit: false, palette: false, tokens: false, watch: false, edit: false,
+    init: false, initSlug: null,
   };
   let i = 0;
   while (i < args.length) {
@@ -51,6 +54,11 @@ function parseArgs(argv) {
     else if (a === '--all') { opts.audit = true; opts.palette = true; opts.tokens = true; }
     else if (a === '--watch') opts.watch = true;
     else if (a === '--edit') opts.edit = true;
+    else if (a === '--init') {
+      opts.init = true;
+      // Optional positional slug right after --init
+      if (args[i + 1] && !args[i + 1].startsWith('--')) opts.initSlug = args[++i];
+    }
     else if (!a.startsWith('--')) opts.themePath = a;
     i++;
   }
@@ -59,6 +67,13 @@ function parseArgs(argv) {
 
 async function main() {
   const opts = parseArgs(process.argv);
+
+  if (opts.init) {
+    const { runInit } = await import('./init.mjs');
+    await runInit(opts.initSlug);
+    return;
+  }
+
   const themePath = opts.themePath ? resolve(opts.themePath) : discoverTheme().themePath;
 
   if (opts.edit) {
