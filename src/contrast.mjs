@@ -36,6 +36,13 @@ export function auditContrast(label, hex, canvasBg) {
   return ratio;
 }
 
+// Watch/edit modes call this between renders so the audit reflects
+// the current theme state, not an accumulation across reloads.
+export function resetAudit() {
+  auditLog.length = 0;
+  auditedKeys.clear();
+}
+
 export function wcagBadge(ratio) {
   const r = parseFloat(ratio.toFixed(1));
   if (r >= 4.5) return chalk.hex('#4fae50')(`${r.toFixed(1)}:1 AA`);

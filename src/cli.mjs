@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 import { resolve } from 'node:path';
 import { chalk } from './colorize.mjs';
-import { discoverTheme, loadTheme, die } from './discover.mjs';
-import { loadGhosttyTheme } from './ghostty.mjs';
-import { renderHeader } from './render/header.mjs';
-import { renderConversation } from './render/conversation.mjs';
-import { renderPalette } from './render/palette.mjs';
-import { renderAllTokens } from './render/tokens.mjs';
-import { renderContrastSummary, renderAudit, renderFooter } from './render/audit.mjs';
+import { discoverTheme } from './discover.mjs';
+import { runOnce } from './render-all.mjs';
 
 function showHelp() {
   process.stdout.write(`
@@ -16,6 +11,7 @@ ${chalk.bold('cc-theme-check')} · Claude Code Theme Verifier
 ${chalk.bold('Usage')}
   cc-theme-check                                 auto-discover active theme
   cc-theme-check path/to/my-theme.json          check a specific theme file
+  cc-theme-check --watch                         live reload on theme-file save
   cc-theme-check --all                           show everything
 
 ${chalk.bold('Flags')}
@@ -23,6 +19,7 @@ ${chalk.bold('Flags')}
   --palette      Show ANSI 16-color palette (requires --ghostty)
   --tokens       Show all 69 token swatches with contrast ratios
   --all          Show everything
+  --watch        Re-render on theme-file change (Ctrl-C to exit)
   --ghostty <p>  Provide Ghostty theme for ANSI palette + canvas bg
   --bg <#hex>    Override terminal background for contrast math
   --help         Show this message
@@ -36,7 +33,10 @@ ${chalk.bold('Default output')}
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const opts = { ghosttyPath: null, bgOverride: null, themePath: null, audit: false, palette: false, tokens: false };
+  const opts = {
+    ghosttyPath: null, bgOverride: null, themePath: null,
+    audit: false, palette: false, tokens: false, watch: false,
+  };
   let i = 0;
   while (i < args.length) {
     const a = args[i];
@@ -47,52 +47,24 @@ function parseArgs(argv) {
     else if (a === '--palette') opts.palette = true;
     else if (a === '--tokens') opts.tokens = true;
     else if (a === '--all') { opts.audit = true; opts.palette = true; opts.tokens = true; }
+    else if (a === '--watch') opts.watch = true;
     else if (!a.startsWith('--')) opts.themePath = a;
     i++;
   }
   return opts;
 }
 
-function resolveCanvasBg(opts, raw, ghosttyTheme) {
-  if (opts.bgOverride) return opts.bgOverride;
-  if (ghosttyTheme?.background) return ghosttyTheme.background;
-  const base = raw.base ?? '';
-  if (base.includes('dark')) return '#1a1b26';
-  if (base.includes('light')) return '#f5f5f5';
-  return '#1a1b26';
-}
-
-function main() {
+async function main() {
   const opts = parseArgs(process.argv);
+  const themePath = opts.themePath ? resolve(opts.themePath) : discoverTheme().themePath;
 
-  let themePath;
-  if (opts.themePath) {
-    themePath = resolve(opts.themePath);
-  } else {
-    const discovered = discoverTheme();
-    themePath = discovered.themePath;
+  if (opts.watch) {
+    const { watchAndRender } = await import('./watch.mjs');
+    await watchAndRender(themePath, opts);
+    return;
   }
 
-  const { raw, absPath } = loadTheme(themePath);
-  const overrides = raw.overrides ?? {};
-  const overrideCount = Object.keys(overrides).length;
-
-  let ghosttyTheme = null;
-  if (opts.ghosttyPath) ghosttyTheme = loadGhosttyTheme(opts.ghosttyPath);
-
-  const canvasBg = resolveCanvasBg(opts, raw, ghosttyTheme);
-
-  // ── Always shown ────────────────────────────────────────────────
-  renderHeader(raw.name, raw.base, absPath, overrideCount);
-  renderConversation(overrides, canvasBg, ghosttyTheme);
-  renderContrastSummary();
-
-  // ── Behind flags ────────────────────────────────────────────────
-  if (opts.palette && ghosttyTheme) renderPalette(ghosttyTheme, canvasBg);
-  if (opts.tokens) renderAllTokens(overrides, canvasBg);
-  if (opts.audit) renderAudit(canvasBg);
-
-  renderFooter(raw.name);
+  runOnce(themePath, opts);
 }
 
-main();
+main().catch((err) => { console.error(err); process.exit(1); });
