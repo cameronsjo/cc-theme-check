@@ -2,16 +2,21 @@ import { chalk } from '../colorize.mjs';
 
 export const WIDTH = 72;
 
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+
+export function stripAnsi(str) {
+  return str.replace(ANSI_RE, '');
+}
+
 export function pad(str, len, char = ' ') {
-  const stripped = str.replace(/\x1b\[[0-9;]*m/g, '');
-  const diff = len - stripped.length;
+  const diff = len - stripAnsi(str).length;
   return diff > 0 ? str + char.repeat(diff) : str;
 }
 
 export function rule(char = '─', label = '') {
   if (label) {
     const line = `  ${char.repeat(3)} ${label} `;
-    const rest = WIDTH - line.replace(/\x1b\[[0-9;]*m/g, '').length;
+    const rest = WIDTH - stripAnsi(line).length;
     return chalk.dim(`${line}${char.repeat(Math.max(0, rest))}`);
   }
   return chalk.dim(`  ${char.repeat(WIDTH - 2)}`);

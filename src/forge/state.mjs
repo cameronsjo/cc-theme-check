@@ -5,6 +5,8 @@
 import { isValidHex } from '../contrast.mjs';
 import { CATALOG, flatten } from './catalog.mjs';
 
+const HISTORY_CAP = 100;
+
 export function initialState({ overrides, canvasBg, themePath, ghosttyTheme, themeRaw }) {
   return {
     overrides: { ...overrides },
@@ -76,7 +78,9 @@ export function reducer(state, action) {
         ...state,
         overrides: next,
         edit: null,
-        history: [...state.history, state.overrides],
+        // Cap undo history at 100 entries — a long forge session shouldn't
+        // accumulate unbounded snapshots.
+        history: [...state.history, state.overrides].slice(-HISTORY_CAP),
         redoStack: [],
         status: '',
       };
@@ -91,7 +95,7 @@ export function reducer(state, action) {
         ...state,
         overrides: prev,
         history: state.history.slice(0, -1),
-        redoStack: [...state.redoStack, state.overrides],
+        redoStack: [...state.redoStack, state.overrides].slice(-HISTORY_CAP),
         status: 'undo',
       };
     }
@@ -102,7 +106,7 @@ export function reducer(state, action) {
         ...state,
         overrides: next,
         redoStack: state.redoStack.slice(0, -1),
-        history: [...state.history, state.overrides],
+        history: [...state.history, state.overrides].slice(-HISTORY_CAP),
         status: 'redo',
       };
     }
@@ -117,8 +121,6 @@ export function reducer(state, action) {
 
     case 'QUIT_CONFIRM':
       return { ...state, quitConfirm: true, status: 'unsaved changes — press q again to discard, s to save' };
-    case 'CANCEL_QUIT':
-      return { ...state, quitConfirm: false, status: '' };
 
     case 'SET_FILTER':
       return { ...state, filter: action.value, cursor: 0, status: '' };

@@ -43,11 +43,20 @@ export function resetAudit() {
   auditedKeys.clear();
 }
 
-export function wcagBadge(ratio) {
+// Shared source of truth for WCAG badge classification. Both the chalk
+// renderer (wcagBadge below) and the Ink EditRow consume this — keeps
+// thresholds and labels from drifting when issue #1 (role-aware audit)
+// lands and introduces additional buckets.
+export function wcagBucket(ratio) {
   const r = parseFloat(ratio.toFixed(1));
-  if (r >= 4.5) return chalk.hex('#4fae50')(`${r.toFixed(1)}:1 AA`);
-  if (r >= 3.0) return chalk.hex('#c4932a')(`${r.toFixed(1)}:1 aa`);
-  return chalk.hex('#b85a55')(`${r.toFixed(1)}:1 FAIL`);
+  if (r >= 4.5) return { ratio: r, label: 'AA',   color: '#4fae50' };
+  if (r >= 3.0) return { ratio: r, label: 'aa',   color: '#c4932a' };
+  return            { ratio: r, label: 'FAIL', color: '#b85a55' };
+}
+
+export function wcagBadge(ratio) {
+  const { ratio: r, label, color } = wcagBucket(ratio);
+  return chalk.hex(color)(`${r.toFixed(1)}:1 ${label}`);
 }
 
 export function tok(overrides, key, fallback) {

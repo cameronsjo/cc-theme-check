@@ -2,6 +2,7 @@
 // Renders each token with a colored swatch + key + current hex.
 import React from 'react';
 import { Box, Text } from 'ink';
+import { isValidHex } from '../../contrast.mjs';
 import { CATALOG } from '../catalog.mjs';
 import { visibleTokens } from '../state.mjs';
 
@@ -9,35 +10,40 @@ const h = React.createElement;
 
 const SWATCH = '████';
 
-function rowColor(hex) {
-  return hex && /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : undefined;
+// Sections that match the filter but have all their tokens hidden by it
+// still need a header rendered (so the user knows the section exists).
+// We compute collapsed-state separately for that case.
+function isSectionVisible(section, state) {
+  if (state.collapsed.has(section)) return false;
+  if (!state.filter) return true;
+  const n = state.filter.toLowerCase();
+  return CATALOG
+    .find((s) => s.section === section)
+    ?.tokens.some((t) => t.key.toLowerCase().includes(n) || t.label.toLowerCase().includes(n));
 }
 
 export function TokenList({ state }) {
   const visible = visibleTokens(state);
   const focused = visible[state.cursor];
-  // Build the display: header per section + each token. Track flat index
-  // to align with state.cursor.
   const lines = [];
-  let flatIdx = 0;
-  for (const { section, tokens } of CATALOG) {
+
+  // Emit a header per section. Collapsed sections still get a header so
+  // the user sees the structure; expanded-but-empty (no filter matches)
+  // sections are skipped via isSectionVisible.
+  for (const { section } of CATALOG) {
     const isCollapsed = state.collapsed.has(section);
-    const visibleInSection = isCollapsed ? [] : tokens.filter((t) => {
-      if (!state.filter) return true;
-      const n = state.filter.toLowerCase();
-      return t.key.toLowerCase().includes(n) || t.label.toLowerCase().includes(n);
-    });
-    if (visibleInSection.length === 0 && state.filter && !isCollapsed) continue;
+    if (!isSectionVisible(section, state) && !isCollapsed) continue;
     const sigil = isCollapsed ? '▸' : '▾';
     lines.push(h(Text, { key: `s:${section}`, bold: true, color: 'cyan' }, ` ${sigil} ${section}`));
-    for (const tok of visibleInSection) {
-      const idx = flatIdx++;
+    if (isCollapsed) continue;
+    for (const tok of visible.filter((t) => t.section === section)) {
       const isFocused = focused && focused.key === tok.key;
       const hex = state.overrides[tok.key];
       const arrow = isFocused ? '►' : ' ';
+      const swatchColor = isValidHex(hex) ? hex : undefined;
       const rowChildren = [
         ` ${arrow} `,
-        h(Text, { key: 'sw', color: rowColor(hex) }, SWATCH),
+        h(Text, { key: 'sw', color: swatchColor }, SWATCH),
         '  ',
         tok.key.padEnd(34, ' ').slice(0, 34),
         '  ',

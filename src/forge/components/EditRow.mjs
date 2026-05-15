@@ -3,15 +3,34 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
-import { contrastRatio, isValidHex } from '../../contrast.mjs';
+import { contrastRatio, isValidHex, wcagBucket } from '../../contrast.mjs';
 import { focusedToken } from '../state.mjs';
 
 const h = React.createElement;
 
+// Color name mapping for Ink. The shared `wcagBucket` returns hex codes
+// (used by the chalk badge); Ink doesn't render arbitrary hex in `color`
+// reliably, so we route the three bucket labels to named Ink colors.
+const INK_COLOR = { AA: 'green', aa: 'yellow', FAIL: 'red' };
+
 function wcagBadge(ratio) {
-  if (ratio >= 4.5) return h(Text, { color: 'green' },  `${ratio.toFixed(1)}:1 AA`);
-  if (ratio >= 3.0) return h(Text, { color: 'yellow' }, `${ratio.toFixed(1)}:1 aa (large)`);
-  return h(Text, { color: 'red' }, `${ratio.toFixed(1)}:1 FAIL`);
+  const { label } = wcagBucket(ratio);
+  const text = label === 'aa' ? `${ratio.toFixed(1)}:1 aa (large)` : `${ratio.toFixed(1)}:1 ${label}`;
+  return h(Text, { color: INK_COLOR[label] }, text);
+}
+
+function wcagLine(state, tok, ratio) {
+  if (ratio !== null) {
+    return h(Box, null,
+      h(Text, null, '  wcag:    '),
+      wcagBadge(ratio),
+      h(Text, { dimColor: true }, `  on ${state.canvasBg}`),
+    );
+  }
+  if (tok.type === 'bg') {
+    return h(Text, { dimColor: true }, '  wcag:    (background-only — audit skipped)');
+  }
+  return h(Text, { dimColor: true }, '  wcag:    —');
 }
 
 export function EditRow({ state, dispatch }) {
@@ -24,7 +43,7 @@ export function EditRow({ state, dispatch }) {
   const editing = state.edit && state.edit.tokenKey === tok.key;
   const draft = editing ? state.edit.draftHex : '';
 
-  // WCAG line — use draft hex if currently editing, otherwise the saved hex.
+  // Use draft hex while editing (for live feedback), saved hex otherwise.
   const previewHex = editing ? (isValidHex(draft) ? draft : null) : current;
   const showRatio = previewHex && tok.type !== 'bg' && isValidHex(state.canvasBg);
   const ratio = showRatio ? contrastRatio(previewHex, state.canvasBg) : null;
@@ -58,15 +77,7 @@ export function EditRow({ state, dispatch }) {
           isValidHex(draft) && h(Text, { color: draft }, '████'),
         )
       : h(Text, { dimColor: true }, '  press [enter] to edit'),
-    showRatio && ratio !== null
-      ? h(Box, null,
-          h(Text, null, '  wcag:    '),
-          wcagBadge(ratio),
-          h(Text, { dimColor: true }, `  on ${state.canvasBg}`),
-        )
-      : tok.type === 'bg'
-        ? h(Text, { dimColor: true }, '  wcag:    (background-only — audit skipped)')
-        : h(Text, { dimColor: true }, '  wcag:    —'),
+    wcagLine(state, tok, ratio),
     state.status && h(Text, { color: 'yellow' }, `  · ${state.status}`),
   );
 }
