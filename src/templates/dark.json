@@ -1,0 +1,62 @@
+{
+  "name": "Starter (dark)",
+  "base": "dark-ansi",
+  "overrides": {
+    "promptBorder":   "#666666",
+    "bashBorder":     "#888888",
+    "planMode":       "#888888",
+    "autoAccept":     "#888888",
+    "fastMode":       "#888888",
+
+    "briefLabelYou":    "#cccccc",
+    "briefLabelClaude": "#cccccc",
+
+    "claude":                        "#aaaaaa",
+    "claudeBlue_FOR_SYSTEM_SPINNER": "#888888",
+    "background":                    "#888888",
+    "inactive":                      "#888888",
+    "subtle":                        "#555555",
+
+    "text":       "#cccccc",
+    "suggestion": "#aaaaaa",
+    "remember":   "#aaaaaa",
+    "permission": "#aaaaaa",
+
+    "success": "#888888",
+    "error":   "#888888",
+    "warning": "#888888",
+    "merged":  "#888888",
+
+    "diffAdded":         "#2a2a2a",
+    "diffAddedDimmed":   "#222222",
+    "diffAddedWord":     "#3a3a3a",
+    "diffRemoved":       "#2a2a2a",
+    "diffRemovedDimmed": "#222222",
+    "diffRemovedWord":   "#3a3a3a",
+
+    "red_FOR_SUBAGENTS_ONLY":    "#888888",
+    "blue_FOR_SUBAGENTS_ONLY":   "#888888",
+    "green_FOR_SUBAGENTS_ONLY":  "#888888",
+    "yellow_FOR_SUBAGENTS_ONLY": "#888888",
+    "purple_FOR_SUBAGENTS_ONLY": "#888888",
+    "orange_FOR_SUBAGENTS_ONLY": "#888888",
+    "pink_FOR_SUBAGENTS_ONLY":   "#888888",
+    "cyan_FOR_SUBAGENTS_ONLY":   "#888888",
+
+    "rainbow_red":    "#888888",
+    "rainbow_orange": "#888888",
+    "rainbow_yellow": "#888888",
+    "rainbow_green":  "#888888",
+    "rainbow_blue":   "#888888",
+    "rainbow_indigo": "#888888",
+    "rainbow_violet": "#888888",
+
+    "rainbow_red_shimmer":    "#aaaaaa",
+    "rainbow_orange_shimmer": "#aaaaaa",
+    "rainbow_yellow_shimmer": "#aaaaaa",
+    "rainbow_green_shimmer":  "#aaaaaa",
+    "rainbow_blue_shimmer":   "#aaaaaa",
+    "rainbow_indigo_shimmer": "#aaaaaa",
+    "rainbow_violet_shimmer": "#aaaaaa"
+  }
+}
