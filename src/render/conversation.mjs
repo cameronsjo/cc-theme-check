@@ -1,6 +1,6 @@
 import { chalk, cfg, cbg } from '../colorize.mjs';
 import { tok, auditContrast } from '../contrast.mjs';
-import { sectionHeader, glyphs, WIDTH } from './layout.mjs';
+import { sectionHeader, glyphs, stripAnsi, WIDTH } from './layout.mjs';
 
 const RAINBOW_KEYS = [
   'rainbow_red', 'rainbow_orange', 'rainbow_yellow',
@@ -75,17 +75,17 @@ export function renderConversation(overrides, canvasBg, ghosttyTheme) {
   diffRow(diffAdd,    text, '+', '    if (!input) return { tokens: [], ok: true };', diffAddWord, 'input');
   diffRow(diffDelDim, text, ' ', '  const result = parse(rawInput);');
   diffRow(diffDel,    text, '-', '  const result = oldParse(rawInput);',              diffDelWord, 'oldParse');
-  toolResultOk(g, subtle, success, '✓ Applied');
+  toolResult(g, subtle, success, '✓ Applied');
 
   // ── Permission prompt (the legitimate place for a box) ──
   permissionPrompt(permission, promptBorder, text, inactive);
 
   // ── Bash tool ──
   toolCall(g, claudeC, inactive, 'Bash', 'npm test');
-  toolResultOk(g, subtle, success, '✓ 42 tests passed');
+  toolResult(g, subtle, success, '✓ 42 tests passed');
 
   // ── Subagent dispatch (exercises *_FOR_SUBAGENTS_ONLY) ──
-  toolCallColored(g, claudeC, subagentBlue, inactive, 'Task', 'Explore — survey repo');
+  toolCall(g, claudeC, inactive, 'Task', 'Explore — survey repo', subagentBlue);
   toolResult(g, subtle, inactive, 'Done (12 tool uses)');
 
   // ── Final response with merged badge ──
@@ -107,13 +107,7 @@ export function renderConversation(overrides, canvasBg, ghosttyTheme) {
   statusFooter(subtle, inactive, success, autoAccept);
 }
 
-function toolCall(g, dotColor, argColor, name, arg) {
-  process.stdout.write(
-    `  ${cfg(dotColor, g.toolDot)} ${chalk.bold(cfg(dotColor, name))}${cfg(argColor, `(${arg})`)}\n`
-  );
-}
-
-function toolCallColored(g, dotColor, nameColor, argColor, name, arg) {
+function toolCall(g, dotColor, argColor, name, arg, nameColor = dotColor) {
   process.stdout.write(
     `  ${cfg(dotColor, g.toolDot)} ${chalk.bold(cfg(nameColor, name))}${cfg(argColor, `(${arg})`)}\n`
   );
@@ -122,12 +116,6 @@ function toolCallColored(g, dotColor, nameColor, argColor, name, arg) {
 function toolResult(g, connectorColor, contentColor, message) {
   process.stdout.write(
     `    ${chalk.dim(cfg(connectorColor, g.connector))}  ${cfg(contentColor, message)}\n\n`
-  );
-}
-
-function toolResultOk(g, connectorColor, okColor, message) {
-  process.stdout.write(
-    `    ${chalk.dim(cfg(connectorColor, g.connector))}  ${cfg(okColor, message)}\n\n`
   );
 }
 
@@ -156,8 +144,7 @@ function permissionPrompt(permColor, borderColor, textColor, dimColor) {
   const bot = '╰' + '─'.repeat(W_OUT - 2) + '╯';
 
   const row = (colored) => {
-    const stripped = colored.replace(/\x1b\[[0-9;]*m/g, '');
-    const pad = ' '.repeat(Math.max(0, innerW - stripped.length));
+    const pad = ' '.repeat(Math.max(0, innerW - stripAnsi(colored).length));
     return `${cfg(borderColor, '│')} ${colored}${pad} ${cfg(borderColor, '│')}`;
   };
 

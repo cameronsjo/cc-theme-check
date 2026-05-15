@@ -5,21 +5,32 @@ hardcoded theme assumptions, no project-specific defaults.
 
 ## Project shape
 
-Plain Node ESM package. Single dependency: `chalk@^5`. Entry point at
-`src/cli.mjs` (executable, shebanged), exposed globally as
-`cc-theme-check` via `package.json`'s `bin` field.
+Plain Node ESM package. Single runtime dependency: `chalk@^5`. Optional
+peer deps (`ink`, `react`, `ink-text-input`) gate the `--edit` TUI;
+default install stays chalk-only. Entry point at `src/cli.mjs`
+(executable, shebanged), exposed globally as `cc-theme-check` via
+`package.json`'s `bin` field.
 
 ```
 src/
-  cli.mjs           Entry: arg parsing, mode routing
+  cli.mjs           Entry: arg parsing, mode routing (lazy-loads watch/forge/init)
   colorize.mjs      chalk pipeline (mirror of Claude Code's colorize.ts)
-  contrast.mjs      sRGB linearization + WCAG ratio + audit log
+  contrast.mjs      sRGB linearization + WCAG ratio + audit log + wcagBucket
   discover.mjs      Auto-discover active theme from ~/.claude/settings.json
   ghostty.mjs       Parse Ghostty theme INI files
+  render-all.mjs    Shared render orchestration (runOnce + resolveCanvasBg)
+  watch.mjs         --watch: fs.watch loop with debounce + resize re-render
+  init.mjs          --init: TTY-aware prompter + template scaffolding
+  templates/        Starter theme JSONs (boring greys, dark + light)
+  forge/            --edit: Ink TUI (lazy-loaded)
+    index.mjs       launchForge() entry
+    catalog.mjs     Token catalog (sections + flatten())
+    state.mjs       Reducer + undo history (capped at 100)
+    components/     Ink components: Forge, TokenList, Preview, EditRow, HelpFooter
   render/
-    layout.mjs      WIDTH constant, pad/rule/sectionHeader helpers
+    layout.mjs      WIDTH constant, stripAnsi/pad/rule/sectionHeader/glyphs
     header.mjs      Box-drawing header
-    conversation.mjs  Mock Claude Code conversation
+    conversation.mjs  Mock Claude Code conversation (platform-aware glyphs)
     palette.mjs     ANSI 16-color grid + mock terminal content
     tokens.mjs      All 69 tokens with swatches
     audit.mjs       Contrast summary + WCAG breakdown + footer
@@ -55,13 +66,18 @@ src/
 ## Development
 
 ```bash
-node src/cli.mjs                              # default mode
+node src/cli.mjs                              # default mode (verify)
 node src/cli.mjs --all                         # everything
 node src/cli.mjs --tokens                      # all 69 tokens
 node src/cli.mjs --audit                       # contrast breakdown
+node src/cli.mjs --watch                       # live reload on theme-file save
+node src/cli.mjs --edit                        # Ink TUI forge (needs peer deps)
+node src/cli.mjs --init [slug]                 # scaffold a new theme
 node src/cli.mjs --ghostty <path>              # bring your own ANSI palette
 node src/cli.mjs path/to/theme.json            # specific file
 ```
+
+For `--edit`, install the optional peer deps once: `npm install ink react ink-text-input`.
 
 ## When adding a new token to the verifier
 
@@ -82,25 +98,38 @@ upstream changes how it boosts/clamps chalk levels, update both
 The header banner in `render/header.mjs` reports the resolved level,
 which is the user-visible signal that something is off.
 
-## Forge modes (implemented)
+## Forge modes
 
 The default `cc-theme-check` is the verifier. Three additional modes ride
 the same render core:
 
 - `--watch` — re-renders on every save to the theme file. No new deps;
   uses `fs.watch` on the parent directory so editor-rename saves still
-  work.
+  work. 50 ms debounce coalesces multi-write saves; also re-renders on
+  terminal resize. Clean SIGINT exit.
 - `--edit` — Ink-based TUI: side-by-side preview, j/k navigation, hex
-  entry with live WCAG feedback. Lazy-loads `ink` + `react` +
-  `ink-text-input` (peerDependenciesMeta optional). Default install
-  stays chalk-only.
-- `--init` (Phase 4) — readline scaffolding for new themes.
+  entry with live WCAG feedback, undo/redo, save-to-disk, filter mode.
+  Lazy-loads `ink` + `react` + `ink-text-input` (peerDependenciesMeta
+  optional). Default install stays chalk-only; missing deps print a
+  clean install hint.
+- `--init [slug]` — TTY-aware prompter scaffolding new themes from a
+  starter template (dark or light, both monochrome greys). Optionally
+  rewires `~/.claude/settings.json`. Handles both interactive TTY and
+  piped stdin without hanging.
 
-The Preview pane in `--edit` reuses `renderConversation()` by
-monkey-patching `process.stdout.write` during the render pass and
-embedding the captured ANSI in an Ink `<Text>` node. This means **all
-modes share one source of visual truth** — fixing a layout bug in
+**Shared render core.** The Preview pane in `--edit` reuses
+`renderConversation()` by monkey-patching `process.stdout.write` during
+the render pass and embedding the captured ANSI in an Ink `<Text>` node.
+All four modes share one source of visual truth — fixing a layout bug in
 conversation.mjs propagates everywhere.
+
+**Forge state invariants:**
+- Undo history capped at 100 snapshots (`HISTORY_CAP` in `state.mjs`).
+- Save baselines against the *snapshot written*, not current state — so
+  edits during the async `writeFile` don't silently mark themselves as
+  saved.
+- Hex deletion via clearing the input — empty TextInput dispatches `''`
+  (not `'#'`), letting `COMMIT_EDIT` hit the deletion branch.
 
 ## Out of scope
 
