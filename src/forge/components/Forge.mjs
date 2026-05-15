@@ -11,6 +11,7 @@
 import React from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { writeFile } from 'node:fs/promises';
+import { debug } from '../../debug.mjs';
 import { reducer, initialState, focusedToken, visibleTokens, isDirty } from '../state.mjs';
 import { TokenList } from './TokenList.mjs';
 import { Preview } from './Preview.mjs';
@@ -33,8 +34,10 @@ function TitleBar({ state }) {
 }
 
 async function saveToDisk({ themePath, themeRaw }, snapshot) {
+  debug('save start', { themePath, overrideCount: Object.keys(snapshot).length });
   const next = { ...themeRaw, overrides: snapshot };
   await writeFile(themePath, JSON.stringify(next, null, 2) + '\n', 'utf8');
+  debug('save ok', { themePath });
 }
 
 export function Forge({ initialProps }) {
@@ -86,8 +89,14 @@ export function Forge({ initialProps }) {
       // user has typed by the time writeFile resolves.
       const snapshot = { ...state.overrides };
       saveToDisk(state, snapshot).then(
-        () => dispatch({ type: 'SAVE_SUCCESS', snapshot }),
-        (err) => dispatch({ type: 'SAVE_FAIL', error: err.message }),
+        () => {
+          debug('save action ok', { themePath: state.themePath });
+          dispatch({ type: 'SAVE_SUCCESS', snapshot });
+        },
+        (err) => {
+          debug('save action failed', { themePath: state.themePath, error: err.message });
+          dispatch({ type: 'SAVE_FAIL', error: err.message });
+        },
       );
     }
     else if (input === 'q') {
@@ -98,13 +107,6 @@ export function Forge({ initialProps }) {
       }
     }
   });
-
-  // If filter is empty after deleting all chars, leave filter mode.
-  React.useEffect(() => {
-    if (filterMode && filterDraft === '') {
-      // stay in filterMode but show prompt
-    }
-  }, [filterMode, filterDraft]);
 
   const tokens = visibleTokens(state);
   if (tokens.length === 0 && !state.filter) {

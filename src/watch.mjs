@@ -4,6 +4,7 @@
 import { watch } from 'node:fs/promises';
 import { dirname, basename } from 'node:path';
 import { chalk } from './colorize.mjs';
+import { debug } from './debug.mjs';
 import { runOnce } from './render-all.mjs';
 
 const DEBOUNCE_MS = 50;
@@ -20,10 +21,12 @@ export async function watchAndRender(themePath, opts) {
       process.stdout.write(chalk.dim(`  ↻ watching ${themePath}  (Ctrl-C to exit)\n`));
       runOnce(themePath, opts);
     } catch (err) {
+      debug('render failed', { themePath, error: err.message });
       process.stdout.write(chalk.red(`  ✗ render failed: ${err.message}\n`));
     }
   };
 
+  debug('watch start', { themePath });
   process.stdout.on('resize', renderNow);
   renderNow();
 
@@ -34,10 +37,12 @@ export async function watchAndRender(themePath, opts) {
   try {
     for await (const event of watch(dir, { signal: ac.signal })) {
       if (event.filename !== targetName) continue;
+      debug('file changed', { filename: event.filename });
       if (pending) clearTimeout(pending);
       pending = setTimeout(renderNow, DEBOUNCE_MS);
     }
   } catch (err) {
     if (err.name !== 'AbortError') throw err;
+    debug('watch cancelled');
   }
 }
