@@ -1,0 +1,21 @@
+{
+  "name": "cc-theme-check",
+  "version": "0.1.0",
+  "description": "Claude Code theme verifier — preview and audit custom themes in the terminal",
+  "type": "module",
+  "bin": {
+    "cc-theme-check": "./src/cli.mjs"
+  },
+  "scripts": {
+    "start": "node src/cli.mjs"
+  },
+  "dependencies": {
+    "chalk": "^5.4.0"
+  },
+  "keywords": ["claude-code", "theme", "terminal", "cli", "wcag", "contrast"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cameronsjo/cc-theme-check.git"
+  }
+}
