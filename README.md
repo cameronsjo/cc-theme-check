@@ -64,11 +64,24 @@ That puts `cc-theme-check` on your `$PATH` globally. Or run without linking:
 node /path/to/cc-theme-check/src/cli.mjs
 ```
 
+### Optional: TUI forge dependencies
+
+The `--edit` mode opens an Ink-based TUI for interactive theme editing. It requires three optional peer dependencies — they are **not** installed by default to keep the verifier lean:
+
+```bash
+npm install -g ink react ink-text-input
+```
+
+Running `--edit` without these prints a clean install hint and exits. The verify, watch, and init modes work with chalk alone.
+
 ## Usage
 
 ```
 cc-theme-check                          auto-discover active theme
 cc-theme-check path/to/my-theme.json    check a specific theme file
+cc-theme-check --watch                  live reload on theme-file save
+cc-theme-check --edit                   interactive TUI forge (needs peer deps)
+cc-theme-check --init [slug]            scaffold a new theme from a template
 cc-theme-check --all                    show everything
 ```
 
@@ -115,11 +128,58 @@ cc-theme-check --all --ghostty ~/.config/ghostty/themes/my-theme
 
 `--ghostty` matters because Claude Code reads the terminal's ANSI palette for several surfaces (code highlighting, dim comments, etc.). Without it, the tool falls back to reasonable defaults but won't match what you see in your actual terminal.
 
+**Live-reload while you tune:**
+
+```bash
+cc-theme-check --watch
+```
+
+Watches the active theme file and re-renders on every save. Edit `theme.json` in your editor of choice; the preview refreshes in <50 ms. Works with editor-rename saves (write-to-`.tmp` + mv) and re-renders on terminal resize too. Ctrl-C to exit.
+
+**Tune interactively in a TUI forge:**
+
+```bash
+cc-theme-check --edit
+```
+
+Opens an Ink-based side-by-side editor: token list on the left, live preview on the right, hex-entry row at the bottom with WCAG feedback as you type. Requires the optional peer deps (see Install).
+
+#### Forge keybinds
+
+| Key | Mode | Action |
+|---|---|---|
+| `j` / `↓` | navigation | Move cursor down |
+| `k` / `↑` | navigation | Move cursor up |
+| `h` | navigation | Collapse / expand the focused section |
+| `enter` | navigation | Begin editing the focused token |
+| `enter` | editing | Commit the typed hex value |
+| `esc` | editing | Cancel edit, discard draft |
+| `esc` | filtering | Clear filter and exit filter mode |
+| `u` | navigation | Undo last token change |
+| `U` | navigation | Redo |
+| `s` | navigation | Save overrides back to the theme JSON |
+| `/` | navigation | Enter filter mode (incremental token-name search) |
+| `q` | navigation | Quit (prompts to save if dirty) |
+
+Dirty-state guard: pressing `q` while there are unsaved changes asks for confirmation rather than dropping work on the floor. Press `s` to save first, or `q` again to confirm discard.
+
+Set `CC_THEME_CHECK_DEBUG=1` to surface narrative logging (`forge launch start`, `save ok`, etc.) on stderr — useful when something goes sideways and you want to see what the forge thought it was doing.
+
+**Scaffold a new theme from a template:**
+
+```bash
+cc-theme-check --init my-theme-slug
+```
+
+Writes `~/.claude/themes/my-theme-slug.json` with all 48 catalog tokens pre-populated using monochrome greys (no semantic color — you choose). Optionally rewires `~/.claude/settings.json` to point at the new theme. Hands off to `--edit` or `--watch` afterwards.
+
 ## How it works
 
 Under the hood, `cc-theme-check` uses **chalk** — the same color-rendering library Claude Code uses internally (in `src/colorize.ts`). The mock conversation goes through the same `process.env.TMUX && chalk.level > 2` clamping logic, so what you see is what Claude Code will render.
 
 The WCAG contrast math uses sRGB linearization (the WCAG 2.x formula), not naive RGB averaging, so the ratios match what tools like axe DevTools and Stark report.
+
+**One render core, four modes.** The `--edit` TUI's preview pane reuses the verifier's chalk renderer by capturing `process.stdout.write` during the render pass and embedding the resulting ANSI in an Ink `<Text>` node. Ink passes the escape codes through unmodified, so the verify CLI, the watch loop, and the TUI preview all share one source of visual truth — a fix to `render/conversation.mjs` propagates everywhere with zero duplication.
 
 ## Tested terminals
 

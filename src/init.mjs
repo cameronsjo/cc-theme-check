@@ -7,6 +7,7 @@ import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chalk } from './colorize.mjs';
+import { debug } from './debug.mjs';
 import { discoverTheme, loadTheme } from './discover.mjs';
 
 const THEMES_DIR   = join(homedir(), '.claude', 'themes');
@@ -15,7 +16,7 @@ const TEMPLATE_DIR = join(dirname(fileURLToPath(import.meta.url)), 'templates');
 
 // Strict kebab-case: starts with a letter, segments separated by single
 // hyphens, no trailing or consecutive hyphens.
-const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+export const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 // readline/promises has a long-standing quirk where rl.question() leaves
 // the stream paused, so the second call hangs on piped input. We sidestep
@@ -60,7 +61,7 @@ export async function runInit(slugArg) {
     const source = await pickTemplate(prompter);
 
     const overrides = source === 'from-active'
-      ? await readActiveOverrides()
+      ? await readActiveOverrides(base)
       : await loadTemplateOverrides(base);
 
     const themeJson = {
@@ -78,8 +79,10 @@ export async function runInit(slugArg) {
       }
     }
 
+    debug('write theme start', { outPath, slug });
     await mkdir(THEMES_DIR, { recursive: true });
     await writeFile(outPath, JSON.stringify(themeJson, null, 2) + '\n', 'utf8');
+    debug('write theme ok', { outPath });
     process.stdout.write(`${chalk.green('✓')} wrote ${outPath}\n`);
 
     await maybeUpdateSettings(prompter, slug);
@@ -119,22 +122,26 @@ async function loadTemplateOverrides(base) {
   return json.overrides ?? {};
 }
 
-async function readActiveOverrides() {
+async function readActiveOverrides(base) {
   try {
     const { themePath } = discoverTheme();
     const { raw } = loadTheme(themePath);
     return raw.overrides ?? {};
   } catch (err) {
-    process.stderr.write(chalk.yellow(`Couldn't read active theme (${err.message}); falling back to dark template.\n`));
-    return loadTemplateOverrides('dark');
+    process.stderr.write(chalk.yellow(`Couldn't read active theme (${err.message}); falling back to ${base} template.\n`));
+    return loadTemplateOverrides(base);
   }
 }
 
 async function maybeUpdateSettings(prompter, slug) {
   const ans = (await prompter.ask(`Update ~/.claude/settings.json to use custom:${slug}? [y/N]: `)).toLowerCase();
-  if (ans !== 'y') return;
+  if (ans !== 'y') {
+    debug('settings update skipped', { slug });
+    return;
+  }
 
   try {
+    debug('settings update start', { slug, settingsPath: SETTINGS });
     // Treat a missing settings.json as a first-run path: start with {}
     // rather than erroring out. Same goes for the parent directory.
     let settings = {};
@@ -147,12 +154,13 @@ async function maybeUpdateSettings(prompter, slug) {
     settings.theme = `custom:${slug}`;
     await mkdir(dirname(SETTINGS), { recursive: true });
     await writeFile(SETTINGS, JSON.stringify(settings, null, 2) + '\n', 'utf8');
+    debug('settings update ok', { slug, previousTheme: prev ?? 'unset' });
     process.stdout.write(`${chalk.green('✓')} settings.json theme: custom:${slug}  ${chalk.dim(`(was: ${prev ?? 'unset'})`)}\n`);
   } catch (err) {
-    process.stderr.write(chalk.red(`Couldn't update settings: ${err.message}\n`));
+    process.stderr.write(chalk.red(`Failed to update settings: ${err.message}\n`));
   }
 }
 
-function titleCase(slug) {
+export function titleCase(slug) {
   return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }

@@ -4,16 +4,23 @@
 // cli.mjs catches and turns into a clean install hint.
 import React from 'react';
 import { render } from 'ink';
+import { debug } from '../debug.mjs';
 import { loadTheme } from '../discover.mjs';
 import { loadGhosttyTheme } from '../ghostty.mjs';
 import { resolveCanvasBg } from '../render-all.mjs';
 import { Forge } from './components/Forge.mjs';
 
 export async function launchForge({ themePath, opts }) {
+  debug('forge launch start', { themePath });
   const { raw } = loadTheme(themePath);
   const overrides = raw.overrides ?? {};
   const ghosttyTheme = opts.ghosttyPath ? loadGhosttyTheme(opts.ghosttyPath) : null;
   const canvasBg = resolveCanvasBg(opts, raw, ghosttyTheme);
+  debug('forge initialized', {
+    themePath,
+    overrideCount: Object.keys(overrides).length,
+    ghostty: ghosttyTheme ? 'provided' : 'none',
+  });
 
   const { waitUntilExit } = render(
     React.createElement(Forge, {
@@ -28,4 +35,5 @@ export async function launchForge({ themePath, opts }) {
     { exitOnCtrlC: true },
   );
   await waitUntilExit();
+  debug('forge exit', { themePath });
 }
