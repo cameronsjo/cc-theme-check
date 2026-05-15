@@ -81,6 +81,8 @@ cc-theme-check --all                    show everything
 | `--palette` | ANSI 16-color grid (requires `--ghostty`) |
 | `--tokens` | All 69 tokens with colored swatches and contrast ratios |
 | `--all` | Everything above |
+| `--watch` | Re-render on every theme-file save (live reload) |
+| `--edit` | Interactive TUI forge with side-by-side preview |
 | `--ghostty <path>` | Provide Ghostty theme for accurate canvas bg + ANSI palette |
 | `--bg <#hex>` | Override canvas bg for contrast math |
 
