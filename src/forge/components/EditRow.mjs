@@ -46,7 +46,12 @@ export function EditRow({ state, dispatch }) {
           h(Text, null, '#'),
           h(TextInput, {
             value: draft.replace(/^#/, ''),
-            onChange: (v) => dispatch({ type: 'EDIT_INPUT', value: '#' + v.replace(/[^0-9a-fA-F]/g, '').slice(0, 6) }),
+            onChange: (v) => {
+              const cleaned = v.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+              // Empty cleaned -> empty string (no '#'), so COMMIT_EDIT
+              // can hit the deletion branch (hex === '' -> drop override).
+              dispatch({ type: 'EDIT_INPUT', value: cleaned ? '#' + cleaned : '' });
+            },
             onSubmit: () => dispatch({ type: 'COMMIT_EDIT' }),
           }),
           isValidHex(draft) && h(Text, null, '  '),

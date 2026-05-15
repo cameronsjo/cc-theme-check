@@ -35,12 +35,15 @@ export function renderConversation(overrides, canvasBg, ghosttyTheme) {
   const remember     = t('remember', '#888888');
   const subagentBlue = t('blue_FOR_SUBAGENTS_ONLY', '#888888');
 
-  const diffAdd     = tBg('diffAdded',         '#1a3a20');
-  const diffAddDim  = tBg('diffAddedDimmed',   '#1a2a20');
-  const diffAddWord = tBg('diffAddedWord',     '#2d5a3a');
-  const diffDel     = tBg('diffRemoved',       '#3a1a18');
-  const diffDelDim  = tBg('diffRemovedDimmed', '#2a1816');
-  const diffDelWord = tBg('diffRemovedWord',   '#5a2e2a');
+  // Boring-grey fallbacks per CLAUDE.md ("no theme-specific defaults"). The
+  // three tones preserve the visual structure (context vs base vs word) without
+  // baking in any opinion about semantic color (green-for-added, red-for-removed).
+  const diffAdd     = tBg('diffAdded',         '#2a2a2a');
+  const diffAddDim  = tBg('diffAddedDimmed',   '#222222');
+  const diffAddWord = tBg('diffAddedWord',     '#3a3a3a');
+  const diffDel     = tBg('diffRemoved',       '#2a2a2a');
+  const diffDelDim  = tBg('diffRemovedDimmed', '#222222');
+  const diffDelWord = tBg('diffRemovedWord',   '#3a3a3a');
 
   // ── User prompt with brief-mode label and rainbow ultrathink ──
   const rainbowHexes = RAINBOW_KEYS.map((k) => t(k, '#888888'));

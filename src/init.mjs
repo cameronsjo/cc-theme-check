@@ -13,7 +13,9 @@ const THEMES_DIR   = join(homedir(), '.claude', 'themes');
 const SETTINGS     = join(homedir(), '.claude', 'settings.json');
 const TEMPLATE_DIR = join(dirname(fileURLToPath(import.meta.url)), 'templates');
 
-const SLUG_RE = /^[a-z][a-z0-9-]*$/;
+// Strict kebab-case: starts with a letter, segments separated by single
+// hyphens, no trailing or consecutive hyphens.
+const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 // readline/promises has a long-standing quirk where rl.question() leaves
 // the stream paused, so the second call hangs on piped input. We sidestep
@@ -133,9 +135,17 @@ async function maybeUpdateSettings(prompter, slug) {
   if (ans !== 'y') return;
 
   try {
-    const settings = JSON.parse(await readFile(SETTINGS, 'utf8'));
+    // Treat a missing settings.json as a first-run path: start with {}
+    // rather than erroring out. Same goes for the parent directory.
+    let settings = {};
+    try {
+      settings = JSON.parse(await readFile(SETTINGS, 'utf8'));
+    } catch (readErr) {
+      if (readErr.code !== 'ENOENT') throw readErr;
+    }
     const prev = settings.theme;
     settings.theme = `custom:${slug}`;
+    await mkdir(dirname(SETTINGS), { recursive: true });
     await writeFile(SETTINGS, JSON.stringify(settings, null, 2) + '\n', 'utf8');
     process.stdout.write(`${chalk.green('✓')} settings.json theme: custom:${slug}  ${chalk.dim(`(was: ${prev ?? 'unset'})`)}\n`);
   } catch (err) {
