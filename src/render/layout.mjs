@@ -21,3 +21,16 @@ export function sectionHeader(num, title) {
   const label = typeof num === 'string' ? `${num} — ${title}` : `${num.toString().padStart(2, '0')} — ${title}`;
   process.stdout.write(`\n${rule('─', label)}\n\n`);
 }
+
+// Platform-dependent glyphs used by the mock conversation.
+// Mirrors Claude Code's BLACK_CIRCLE swap in src/constants/figures.ts.
+export function glyphs() {
+  const darwin = process.platform === 'darwin';
+  return {
+    toolDot:     darwin ? '⏺' : '●',  // tool-use prefix
+    connector:   '⎿',                 // tool-result connector (U+23BB)
+    thinkingDot: '◆',                 // thinking indicator
+    youPrompt:   '❯',                 // user prompt arrow
+    queuedDot:   '○',                 // queued/inactive tool
+  };
+}

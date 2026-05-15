@@ -9,22 +9,29 @@ cc-theme-check
 Auto-discovers your active theme from `~/.claude/settings.json`, renders a mock conversation using the **same chalk pipeline Claude Code uses internally**, and reports a 3-line WCAG contrast summary.
 
 ```
-  ❯ Can you fix the parser? It crashes on empty input.
+  You: Help me fix the parser. Please ultrathink this one.
+
   ◆ Thinking…
-  ● The crash happens because `parse()` doesn't guard against empty strings.
-    I'll add a check at the top of the function.
 
-  ┌─ Edit src/parser.ts
-  │   function parse(input) {
-  │ +   if (!input) return { tokens: [], ok: true };
-  │
-  └─ ✓ Applied
+  ⏺ Read(src/parser.ts)
+    ⎿  Read 145 lines
 
-  ❯ npm test
-    ✓ 42 tests passed (0.8s)
+  ⏺ Edit(src/parser.ts)
+        function parse(input) {
+    +     if (!input) return { tokens: [], ok: true };
+        const result = parse(rawInput);
+    -   const result = oldParse(rawInput);
+    ⎿  ✓ Applied
 
-  8 AA  2 aa  2 FAIL  run --audit for details
+  ⏺ Bash(npm test)
+    ⎿  ✓ 42 tests passed
+
+  claude-opus-4-7 │ 12.4k tokens │ ⎇ main │ ⏵⏵ auto-accept
+
+  13 AA  6 aa  3 FAIL  run --audit for details
 ```
+
+The mock conversation mirrors what Claude Code actually renders today — `⏺`/`●` tool dots (platform-dependent), `⎿` dimmed result connectors, permission-prompt boxes where they belong, and a `model │ tokens │ branch │ mode` status footer.
 
 ## Why
 
@@ -123,7 +130,7 @@ If chalk reports a different level than expected, the header makes it obvious �
 ## Known limitations
 
 - The contrast audit treats every token as a foreground color. Background-only tokens (`diffAdded`, `diffRemoved`) are excluded from the audit but still rendered in the diff view.
-- The mock conversation exercises ~15 of the 69 tokens directly. Use `--tokens` to see the rest.
+- The mock conversation exercises ~22 of the 56 named tokens directly (tool calls, diff colors, status indicators, brief-mode labels, permission prompts, subagent dispatch, ultrathink rainbow). Use `--tokens` to see the rest.
 - Auto-discovery reads `~/.claude/settings.json`. If you use a different config location, pass the theme path explicitly.
 
 ## License
