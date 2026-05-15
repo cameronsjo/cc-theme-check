@@ -42,14 +42,14 @@ Bring `src/render/conversation.mjs` into structural alignment with what Claude C
 Real Claude Code renders tool calls as a colored dot + bold name with **no surrounding box**. Boxes are reserved for permission prompts and (sometimes) diffs.
 
 Replace:
-```
+```text
 ┌─ Edit src/parser.ts
    <diff lines>
 └─ ✓ Applied
 ```
 
 With:
-```
+```text
 ⏺ Edit(src/parser.ts)
   <diff lines, indented 2 spaces>
   ⎿  ✓ Applied
@@ -103,7 +103,7 @@ The token list has 56 named tokens but the current mock exercises only ~15. Add 
 
 Replace today's abstract `● ✓ ⚠ ✗ ◆` status row with a real-Claude-Code-style footer line:
 
-```
+```text
 ─────────────────────────────────────────────────
   claude-opus-4-7 │ 12.4k tokens │ ⎇ main │ ⏵⏵ auto-accept
 ```
@@ -133,7 +133,7 @@ The forge starts with the cheapest possible win: file-watch live reload.
 
 ### Behavior
 
-```
+```bash
 cc-theme-check --watch                 # watch the discovered theme file
 cc-theme-check --watch path/to.json    # watch a specific path
 cc-theme-check --watch --all           # watch with full audit/tokens/palette
@@ -182,7 +182,7 @@ The ambitious mode: a real interactive editor, vim-keyed, with side-by-side prev
 
 ### Layout
 
-```
+```text
 ╭─ forge ──────── ~/.claude/themes/artificer.json [modified] ──────╮
 │ TOKENS                            │ PREVIEW                       │
 │ ─────                              │ ───────                        │
@@ -296,7 +296,7 @@ Default `npm install -g cc-theme-check` does not pull these. README documents th
 
 Lower the activation energy for new theme authors. Plain `readline` prompts, no Ink dep.
 
-```
+```bash
 cc-theme-check --init               # interactive prompts
 cc-theme-check --init my-theme      # name supplied, defaults applied
 ```

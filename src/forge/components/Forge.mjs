@@ -32,9 +32,9 @@ function TitleBar({ state }) {
   );
 }
 
-async function saveToDisk(state) {
-  const next = { ...state.themeRaw, overrides: state.overrides };
-  await writeFile(state.themePath, JSON.stringify(next, null, 2) + '\n', 'utf8');
+async function saveToDisk({ themePath, themeRaw }, snapshot) {
+  const next = { ...themeRaw, overrides: snapshot };
+  await writeFile(themePath, JSON.stringify(next, null, 2) + '\n', 'utf8');
 }
 
 export function Forge({ initialProps }) {
@@ -81,8 +81,12 @@ export function Forge({ initialProps }) {
     else if (input === 'U') dispatch({ type: 'REDO' });
     else if (input === '/') { setFilterMode(true); setFilterDraft(state.filter); }
     else if (input === 's') {
-      saveToDisk(state).then(
-        () => dispatch({ type: 'SAVE_SUCCESS' }),
+      // Capture the snapshot we're about to write so SAVE_SUCCESS can
+      // baseline against the exact bytes on disk — not whatever the
+      // user has typed by the time writeFile resolves.
+      const snapshot = { ...state.overrides };
+      saveToDisk(state, snapshot).then(
+        () => dispatch({ type: 'SAVE_SUCCESS', snapshot }),
         (err) => dispatch({ type: 'SAVE_FAIL', error: err.message }),
       );
     }

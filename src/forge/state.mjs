@@ -108,7 +108,10 @@ export function reducer(state, action) {
     }
 
     case 'SAVE_SUCCESS':
-      return { ...state, baseline: { ...state.overrides }, quitConfirm: false, status: 'saved' };
+      // baseline against the snapshot we actually wrote, not state.overrides,
+      // so concurrent edits during the async writeFile don't get folded into
+      // the clean baseline (which would silently mark them as "saved").
+      return { ...state, baseline: { ...action.snapshot }, quitConfirm: false, status: 'saved' };
     case 'SAVE_FAIL':
       return { ...state, status: `save failed: ${action.error}` };
 
