@@ -45,6 +45,11 @@ export function Forge({ initialProps }) {
   const { exit } = useApp();
   const [filterMode, setFilterMode] = React.useState(false);
   const [filterDraft, setFilterDraft] = React.useState('');
+  // Synchronous in-flight guard so a rapid `s` re-press can't kick off a
+  // second writeFile against a stale snapshot. A ref (not state) — we want
+  // the flag to change without re-rendering, and to be observable inside
+  // the same useInput tick where it gets set.
+  const saveInFlightRef = React.useRef(false);
 
   useInput((input, key) => {
     // Filter entry mode — TextInput-ish behavior on this single character path.
@@ -84,16 +89,20 @@ export function Forge({ initialProps }) {
     else if (input === 'U') dispatch({ type: 'REDO' });
     else if (input === '/') { setFilterMode(true); setFilterDraft(state.filter); }
     else if (input === 's') {
+      if (saveInFlightRef.current) return;
+      saveInFlightRef.current = true;
       // Capture the snapshot we're about to write so SAVE_SUCCESS can
       // baseline against the exact bytes on disk — not whatever the
       // user has typed by the time writeFile resolves.
       const snapshot = { ...state.overrides };
       saveToDisk(state, snapshot).then(
         () => {
+          saveInFlightRef.current = false;
           debug('save action ok', { themePath: state.themePath });
           dispatch({ type: 'SAVE_SUCCESS', snapshot });
         },
         (err) => {
+          saveInFlightRef.current = false;
           debug('save action failed', { themePath: state.themePath, error: err.message });
           dispatch({ type: 'SAVE_FAIL', error: err.message });
         },
