@@ -12,6 +12,7 @@ ${chalk.bold('Usage')}
   cc-theme-check                                 auto-discover active theme
   cc-theme-check path/to/my-theme.json          check a specific theme file
   cc-theme-check --watch                         live reload on theme-file save
+  cc-theme-check --edit                          interactive TUI forge
   cc-theme-check --all                           show everything
 
 ${chalk.bold('Flags')}
@@ -20,6 +21,7 @@ ${chalk.bold('Flags')}
   --tokens       Show all 69 token swatches with contrast ratios
   --all          Show everything
   --watch        Re-render on theme-file change (Ctrl-C to exit)
+  --edit         Open the Ink-based TUI forge (needs ink + react)
   --ghostty <p>  Provide Ghostty theme for ANSI palette + canvas bg
   --bg <#hex>    Override terminal background for contrast math
   --help         Show this message
@@ -35,7 +37,7 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   const opts = {
     ghosttyPath: null, bgOverride: null, themePath: null,
-    audit: false, palette: false, tokens: false, watch: false,
+    audit: false, palette: false, tokens: false, watch: false, edit: false,
   };
   let i = 0;
   while (i < args.length) {
@@ -48,6 +50,7 @@ function parseArgs(argv) {
     else if (a === '--tokens') opts.tokens = true;
     else if (a === '--all') { opts.audit = true; opts.palette = true; opts.tokens = true; }
     else if (a === '--watch') opts.watch = true;
+    else if (a === '--edit') opts.edit = true;
     else if (!a.startsWith('--')) opts.themePath = a;
     i++;
   }
@@ -57,6 +60,21 @@ function parseArgs(argv) {
 async function main() {
   const opts = parseArgs(process.argv);
   const themePath = opts.themePath ? resolve(opts.themePath) : discoverTheme().themePath;
+
+  if (opts.edit) {
+    try {
+      const { launchForge } = await import('./forge/index.mjs');
+      await launchForge({ themePath, opts });
+    } catch (err) {
+      if (err.code === 'ERR_MODULE_NOT_FOUND') {
+        process.stderr.write(`${chalk.red('--edit requires ink, react, and ink-text-input.')}\n`);
+        process.stderr.write(`Install with:  ${chalk.bold('npm install -g ink react ink-text-input')}\n`);
+        process.exit(1);
+      }
+      throw err;
+    }
+    return;
+  }
 
   if (opts.watch) {
     const { watchAndRender } = await import('./watch.mjs');

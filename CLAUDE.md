@@ -82,11 +82,28 @@ upstream changes how it boosts/clamps chalk levels, update both
 The header banner in `render/header.mjs` reports the resolved level,
 which is the user-visible signal that something is off.
 
+## Forge modes (implemented)
+
+The default `cc-theme-check` is the verifier. Three additional modes ride
+the same render core:
+
+- `--watch` — re-renders on every save to the theme file. No new deps;
+  uses `fs.watch` on the parent directory so editor-rename saves still
+  work.
+- `--edit` — Ink-based TUI: side-by-side preview, j/k navigation, hex
+  entry with live WCAG feedback. Lazy-loads `ink` + `react` +
+  `ink-text-input` (peerDependenciesMeta optional). Default install
+  stays chalk-only.
+- `--init` (Phase 4) — readline scaffolding for new themes.
+
+The Preview pane in `--edit` reuses `renderConversation()` by
+monkey-patching `process.stdout.write` during the render pass and
+embedding the captured ANSI in an Ink `<Text>` node. This means **all
+modes share one source of visual truth** — fixing a layout bug in
+conversation.mjs propagates everywhere.
+
 ## Out of scope
 
-- **Theme editing.** Only verification. A future TUI editor (`--edit`
-  flag, Ink-based) is planned but not started — it would lazy-load
-  `ink` + `react` so default CLI stays single-dep.
 - **Validation against the schema.** Claude Code already errors out on
   bad theme JSON at load time. We render what's there.
 - **Multi-terminal rendering.** Chalk handles the truecolor / 256 /
