@@ -10,7 +10,7 @@ const h = React.createElement;
 
 // ─── Field definitions ────────────────────────────────────────────────────────
 
-const FIELDS = [
+export const FIELDS = [
   { key: 'ghosttyTheme',           label: 'Ghostty theme',  type: 'string'  },
   { key: 'bgOverride',             label: 'Canvas bg',      type: 'string'  },
   { key: 'defaultFlags.audit',     label: 'Default audit',  type: 'boolean' },
@@ -21,7 +21,7 @@ const FIELDS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getField(settings, fieldKey) {
+export function getField(settings, fieldKey) {
   if (fieldKey.startsWith('defaultFlags.')) {
     const flag = fieldKey.split('.')[1];
     return settings.defaultFlags?.[flag] ?? false;
@@ -29,7 +29,7 @@ function getField(settings, fieldKey) {
   return settings[fieldKey] ?? '';
 }
 
-function setField(settings, fieldKey, value) {
+export function setField(settings, fieldKey, value) {
   if (fieldKey.startsWith('defaultFlags.')) {
     const flag = fieldKey.split('.')[1];
     return {
@@ -40,7 +40,7 @@ function setField(settings, fieldKey, value) {
   return { ...settings, [fieldKey]: value };
 }
 
-function deleteField(settings, fieldKey) {
+export function deleteField(settings, fieldKey) {
   if (fieldKey.startsWith('defaultFlags.')) {
     const flag = fieldKey.split('.')[1];
     const next = { ...settings.defaultFlags };
@@ -52,7 +52,7 @@ function deleteField(settings, fieldKey) {
   return next;
 }
 
-function sourceLabel(resolved, fieldKey, workingSettings, baseline) {
+export function sourceLabel(resolved, fieldKey, workingSettings, baseline) {
   // resolveOptions emits flat-name source keys (sources.audit, sources.ghosttyPath, …).
   // Map our nested fieldKeys back to the flat source name they correspond to.
   const flatKey = fieldKey.startsWith('defaultFlags.')
@@ -68,7 +68,7 @@ function sourceLabel(resolved, fieldKey, workingSettings, baseline) {
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
-function initialState({ settings }) {
+export function initialState({ settings }) {
   // The baseline is the user's saved config schema (loaded by the parent
   // via loadConfig). Editing produces a working copy of the same shape;
   // saveConfig writes the schema back unchanged on `s`.
@@ -88,7 +88,7 @@ function initialState({ settings }) {
   };
 }
 
-function reducer(state, action) {
+export function reducer(state, action) {
   switch (action.type) {
     case 'CURSOR_UP':
       return { ...state, cursor: Math.max(state.cursor - 1, 0) };
