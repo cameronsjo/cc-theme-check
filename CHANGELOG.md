@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   catalog tokens are now exercised, so the contrast summary reflects what
   users actually see.
 
-## [0.1.0]
+## [0.1.0] — 2026-05-14
 
 ### Added
 
@@ -92,3 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--all`, `--ghostty <path>`, `--bg <#hex>`.
 - Mirrors Claude Code's chalk pipeline (tmux clamp + xterm.js boost).
 - sRGB-linearized WCAG contrast math.
+
+[Unreleased]: https://github.com/cameronsjo/cc-theme-check/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/cameronsjo/cc-theme-check/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/cameronsjo/cc-theme-check/releases/tag/v0.1.0
