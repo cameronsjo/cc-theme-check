@@ -4,11 +4,20 @@
 // the chosen mode handler.
 import React from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
+import { debug } from '../../debug.mjs';
 import { StatusBar } from './StatusBar.mjs';
 import { ModeList } from './ModeList.mjs';
 import { Settings } from './Settings.mjs';
+import { HelpFooter } from '../../forge/components/HelpFooter.mjs';
 
 const h = React.createElement;
+
+const MENU_KEYS = [
+  ['j/k',   'nav'],
+  ['enter', 'run'],
+  ['s',     'settings'],
+  ['q',     'quit'],
+];
 
 // Items the cursor can land on. Separators don't stop the cursor.
 const ITEMS = [
@@ -31,24 +40,6 @@ function nextSelectable(current, delta) {
   return SELECTABLE[nextPos];
 }
 
-function HelpFooter() {
-  const keys = [
-    ['j/k',   'nav'],
-    ['enter', 'run'],
-    ['s',     'settings'],
-    ['q',     'quit'],
-  ];
-  return h(Box, { paddingX: 1 },
-    ...keys.map(([k, label], i) =>
-      h(Text, { key: k, dimColor: true },
-        i > 0 ? '  ' : '',
-        h(Text, { key: 'k', color: 'cyan' }, `[${k}]`),
-        ` ${label}`,
-      ),
-    ),
-  );
-}
-
 export function Menu({ resolved, settings, onChoice }) {
   const { exit } = useApp();
   const [pane, setPane] = React.useState('menu');
@@ -59,13 +50,30 @@ export function Menu({ resolved, settings, onChoice }) {
 
     if (input === 'j' || key.downArrow) setCursor((c) => nextSelectable(c, +1));
     else if (input === 'k' || key.upArrow) setCursor((c) => nextSelectable(c, -1));
-    else if (input === 's') setPane('settings');
-    else if (input === 'q') { onChoice({ action: 'quit' }); exit(); }
+    else if (input === 's') {
+      debug('pane transition', { from: 'menu', to: 'settings' });
+      setPane('settings');
+    }
+    else if (input === 'q') {
+      debug('user action', { action: 'quit' });
+      onChoice({ action: 'quit' });
+      exit();
+    }
     else if (key.return) {
       const item = ITEMS[cursor];
       if (!item || item.separator) return;
-      if (item.key === 'settings') { setPane('settings'); return; }
-      if (item.key === 'quit')     { onChoice({ action: 'quit' }); exit(); return; }
+      if (item.key === 'settings') {
+        debug('pane transition', { from: 'menu', to: 'settings' });
+        setPane('settings');
+        return;
+      }
+      if (item.key === 'quit') {
+        debug('user action', { action: 'quit' });
+        onChoice({ action: 'quit' });
+        exit();
+        return;
+      }
+      debug('mode selected', { mode: item.key });
       onChoice({ action: item.key });
       exit();
     }
@@ -75,7 +83,10 @@ export function Menu({ resolved, settings, onChoice }) {
     return h(Settings, {
       resolved,
       settings,
-      onClose: () => setPane('menu'),
+      onClose: () => {
+        debug('pane transition', { from: 'settings', to: 'menu' });
+        setPane('menu');
+      },
     });
   }
 
@@ -84,6 +95,6 @@ export function Menu({ resolved, settings, onChoice }) {
     h(Box, { paddingX: 1, marginTop: 1 }, h(Text, { bold: true, dimColor: true }, 'MODE')),
     h(Box, { paddingX: 1 }, h(Text, { dimColor: true }, '────')),
     h(Box, { paddingX: 1, marginBottom: 1 }, h(ModeList, { items: ITEMS, cursor })),
-    h(HelpFooter, null),
+    h(HelpFooter, { keys: MENU_KEYS }),
   );
 }

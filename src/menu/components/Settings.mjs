@@ -4,6 +4,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
+import { debug } from '../../debug.mjs';
 import { saveConfig } from '../../config.mjs';
 
 const h = React.createElement;
@@ -69,14 +70,13 @@ export function sourceLabel(resolved, fieldKey, workingSettings, baseline) {
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
 export function initialState({ settings }) {
-  // The baseline is the user's saved config schema (loaded by the parent
-  // via loadConfig). Editing produces a working copy of the same shape;
-  // saveConfig writes the schema back unchanged on `s`.
+  // Baseline is the user's saved config; working is the edit buffer.
+  // Missing keys stay absent (JSON.stringify drops undefined on save).
   const base = {
-    ghosttyTheme:  settings?.ghosttyTheme  ?? undefined,
-    bgOverride:    settings?.bgOverride    ?? undefined,
-    themePath:     settings?.themePath     ?? undefined,
-    defaultFlags:  { ...(settings?.defaultFlags ?? {}) },
+    ghosttyTheme: settings?.ghosttyTheme,
+    bgOverride:   settings?.bgOverride,
+    themePath:    settings?.themePath,
+    defaultFlags: { ...(settings?.defaultFlags ?? {}) },
   };
   return {
     working:   { ...base },
@@ -121,6 +121,7 @@ export function reducer(state, action) {
     }
 
     case 'CANCEL_EDIT':
+      debug('edit cancelled', { fieldKey: state.edit?.fieldKey });
       return { ...state, edit: null };
 
     case 'DELETE_FIELD': {
@@ -129,11 +130,24 @@ export function reducer(state, action) {
       return { ...state, working: deleteField(state.working, field.key) };
     }
 
-    case 'SAVE_START':
+    case 'SAVE_START': {
+      const fieldCount = Object.keys(state.working).filter(
+        k => state.working[k] !== undefined && state.working[k] !== null
+      ).length;
+      debug('settings save start', { fieldCount });
       return { ...state, saveState: 'saving' };
-    case 'SAVE_SUCCESS':
-      return { ...state, saveState: { ok: true }, baseline: { ...state.working } };
+    }
+    case 'SAVE_SUCCESS': {
+      const snapshot = action.snapshot ?? state.working;
+      const next = { ...state, saveState: { ok: true }, baseline: { ...snapshot } };
+      debug('settings save success', { fieldCount: Object.keys(snapshot).length });
+      // Baseline against the snapshot that was actually written, not current
+      // state — edits made during the async saveConfig() must remain dirty.
+      // Mirrors the invariant in forge/state.mjs (see CLAUDE.md).
+      return next;
+    }
     case 'SAVE_FAIL':
+      debug('settings save fail', { error: action.error });
       return { ...state, saveState: { ok: false, error: action.error } };
     case 'CLEAR_STATUS':
       return { ...state, saveState: null };
@@ -145,12 +159,16 @@ export function reducer(state, action) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+const VALUE_W = 28;
+
 function FieldRow({ field, isCursor, value, source }) {
   const label  = field.label.padEnd(18);
   const valStr = value === '' || value === undefined || value === null
     ? '—'
     : String(value);
-  const displayVal = valStr.length > 28 ? '…' + valStr.slice(-(27)) : valStr.padEnd(28);
+  const displayVal = valStr.length > VALUE_W
+    ? '…' + valStr.slice(-(VALUE_W - 1))
+    : valStr.padEnd(VALUE_W);
 
   return h(Box, { paddingX: 2 },
     h(Text, { color: isCursor ? 'cyan' : undefined },
@@ -210,19 +228,32 @@ export function Settings({ resolved, settings, onClose }) {
       return;
     }
 
-    if (key.escape)      { onClose(); return; }
+    if (key.escape) {
+      debug('settings close', { dirty: JSON.stringify(state.working) !== JSON.stringify(state.baseline) });
+      onClose();
+      return;
+    }
     if (input === 'k' || key.upArrow)   dispatch({ type: 'CURSOR_UP' });
     else if (input === 'j' || key.downArrow) dispatch({ type: 'CURSOR_DOWN' });
-    else if (key.return) dispatch({ type: 'BEGIN_EDIT' });
-    else if (input === 'd') dispatch({ type: 'DELETE_FIELD' });
+    else if (key.return) {
+      const field = FIELDS[state.cursor];
+      debug('field edit start', { fieldKey: field?.key, type: field?.type });
+      dispatch({ type: 'BEGIN_EDIT' });
+    }
+    else if (input === 'd') {
+      const field = FIELDS[state.cursor];
+      debug('field delete', { fieldKey: field?.key });
+      dispatch({ type: 'DELETE_FIELD' });
+    }
     else if (input === 's') {
       if (saveInFlightRef.current) return;
       saveInFlightRef.current = true;
+      const snapshot = { ...state.working };
       dispatch({ type: 'SAVE_START' });
-      saveConfig(state.working).then(
+      saveConfig(snapshot).then(
         () => {
           saveInFlightRef.current = false;
-          dispatch({ type: 'SAVE_SUCCESS' });
+          dispatch({ type: 'SAVE_SUCCESS', snapshot });
         },
         (err) => {
           saveInFlightRef.current = false;

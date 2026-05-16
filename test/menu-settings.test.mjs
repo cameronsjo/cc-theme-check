@@ -228,6 +228,25 @@ describe('reducer — save lifecycle', () => {
     assert.deepEqual(next.saveState, { ok: true });
   });
 
+  test('SAVE_SUCCESS prefers action.snapshot over working (mid-save edits stay dirty)', () => {
+    // Simulates: user pressed `s`, snapshot captured as {bgOverride:'#abc'},
+    // user typed another edit before saveConfig resolved → working is now
+    // {bgOverride:'#abc', ghosttyTheme:'mid-save'}. Baseline must match what
+    // was written (snapshot), not the post-edit working state.
+    const start = {
+      ...makeState(),
+      working: { bgOverride: '#abc', ghosttyTheme: 'mid-save' },
+      baseline: {},
+    };
+    const next = reducer(start, {
+      type: 'SAVE_SUCCESS',
+      snapshot: { bgOverride: '#abc' },
+    });
+    assert.deepEqual(next.baseline, { bgOverride: '#abc' });
+    // The mid-save edit remains in working → dirty indicator still fires.
+    assert.equal(next.working.ghosttyTheme, 'mid-save');
+  });
+
   test('SAVE_FAIL surfaces error', () => {
     const next = reducer(makeState(), { type: 'SAVE_FAIL', error: 'EACCES' });
     assert.deepEqual(next.saveState, { ok: false, error: 'EACCES' });

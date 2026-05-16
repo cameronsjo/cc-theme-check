@@ -5,15 +5,17 @@ hardcoded theme assumptions, no project-specific defaults.
 
 ## Project shape
 
-Plain Node ESM package. Single runtime dependency: `chalk@^5`. Optional
-peer deps (`ink`, `react`, `ink-text-input`) gate the `--edit` TUI;
-default install stays chalk-only. Entry point at `src/cli.mjs`
+Plain Node ESM package. Runtime deps: `chalk@^5` for the verifier, plus
+`ink` / `react` / `ink-text-input` for the launcher and the `--edit`
+forge TUI — all hard `dependencies`. Entry point at `src/cli.mjs`
 (executable, shebanged), exposed globally as `cc-theme-check` via
-`package.json`'s `bin` field.
+`package.json`'s `bin` field. See
+[ADR 0002](docs/adr/0002-launcher-as-primary-interface.md) for the
+launcher + dep-posture decision.
 
 ```
 src/
-  cli.mjs           Entry: arg parsing, mode routing (lazy-loads watch/forge/init)
+  cli.mjs           Entry: arg parsing, TTY-aware mode routing (--verify, --menu)
   colorize.mjs      chalk pipeline (mirror of Claude Code's colorize.ts)
   config.mjs        Load/save ~/.config/cc-theme-check/config.json (XDG-aware)
   autodetect.mjs    Read ~/.config/ghostty/config + $TERM_PROGRAM/$TMUX
@@ -26,7 +28,10 @@ src/
   watch.mjs         --watch: fs.watch loop with debounce + resize re-render
   init.mjs          --init: TTY-aware prompter + template scaffolding
   templates/        Starter theme JSONs (boring greys, dark + light)
-  forge/            --edit: Ink TUI (lazy-loaded)
+  menu/             Launcher TUI (bare-invocation default in a TTY)
+    index.mjs       launchMenu() — render Menu, await pick, unmount, return choice
+    components/     Ink components: Menu, StatusBar, ModeList, Settings
+  forge/            --edit: Ink TUI
     index.mjs       launchForge() entry
     catalog.mjs     Token catalog (sections + flatten())
     state.mjs       Reducer + undo history (capped at 100)
@@ -70,18 +75,21 @@ src/
 ## Development
 
 ```bash
-node src/cli.mjs                              # default mode (verify)
+node src/cli.mjs                              # launcher TUI (or verify if piped)
+node src/cli.mjs --verify                      # one-shot verify (skip launcher)
+node src/cli.mjs --menu                        # force launcher even when piped
 node src/cli.mjs --all                         # everything
 node src/cli.mjs --tokens                      # all 69 tokens
 node src/cli.mjs --audit                       # contrast breakdown
 node src/cli.mjs --watch                       # live reload on theme-file save
-node src/cli.mjs --edit                        # Ink TUI forge (needs peer deps)
+node src/cli.mjs --edit                        # Ink TUI forge
 node src/cli.mjs --init [slug]                 # scaffold a new theme
 node src/cli.mjs --ghostty <path>              # bring your own ANSI palette
-node src/cli.mjs path/to/theme.json            # specific file
+node src/cli.mjs path/to/theme.json            # specific file (skips launcher)
 ```
 
-For `--edit`, install the optional peer deps once: `npm install ink react ink-text-input`.
+`npm install` pulls everything. No optional peer deps — Ink, React, and
+ink-text-input are required.
 
 ## When adding a new token to the verifier
 
@@ -129,24 +137,35 @@ format. The helper lives in `src/ini.mjs::parseIniLine(line)` — splits
 on the first `=`, trims both sides, skips `#` comments and blank
 lines. Don't reintroduce a divergent inline parser.
 
-## Forge modes
+## Modes
 
-The default `cc-theme-check` is the verifier. Three additional modes ride
+Bare `cc-theme-check` opens the launcher TUI in an interactive terminal
+and falls back to the one-shot verifier when piped or scripted (TTY check
+in `src/cli.mjs::shouldOpenMenu()`). `--verify` forces one-shot;
+`--menu` forces the launcher. Beyond verify, three additional modes ride
 the same render core:
 
-- `--watch` — re-renders on every save to the theme file. No new deps;
-  uses `fs.watch` on the parent directory so editor-rename saves still
-  work. 50 ms debounce coalesces multi-write saves; also re-renders on
-  terminal resize. Clean SIGINT exit.
+- `--watch` — re-renders on every save to the theme file. Uses `fs.watch`
+  on the parent directory so editor-rename saves still work. 50 ms
+  debounce coalesces multi-write saves; also re-renders on terminal
+  resize. Clean SIGINT exit.
 - `--edit` — Ink-based TUI: side-by-side preview, j/k navigation, hex
   entry with live WCAG feedback, undo/redo, save-to-disk, filter mode.
-  Lazy-loads `ink` + `react` + `ink-text-input` (peerDependenciesMeta
-  optional). Default install stays chalk-only; missing deps print a
-  clean install hint.
+  Ink is a hard dep — `import()` happens at the top level; no missing-deps
+  path. Same goes for the launcher.
 - `--init [slug]` — TTY-aware prompter scaffolding new themes from a
   starter template (dark or light, both monochrome greys). Optionally
   rewires `~/.claude/settings.json`. Handles both interactive TTY and
   piped stdin without hanging.
+
+**Launcher (`src/menu/`).** Top-level Ink screen with header + mode list
++ settings pane. `launchMenu()` mounts, awaits a pick via callback,
+unmounts, then `cli.mjs` dispatches to the chosen mode. Mode launches
+happen *after* unmount so the forge's own `render()` doesn't nest. The
+Settings pane edits `~/.config/cc-theme-check/config.json` with live
+source labels (`flag` / `settings` / `autodetect` / `default`) so users
+see which override won — same `resolveOptions()` precedence chain the
+verifier uses.
 
 **Shared render core.** The Preview pane in `--edit` reuses
 `renderConversation()` by monkey-patching `process.stdout.write` during
@@ -158,7 +177,8 @@ conversation.mjs propagates everywhere.
 - Undo history capped at 100 snapshots (`HISTORY_CAP` in `state.mjs`).
 - Save baselines against the *snapshot written*, not current state — so
   edits during the async `writeFile` don't silently mark themselves as
-  saved.
+  saved. The Settings pane in the launcher follows the same invariant
+  (snapshot passed via `SAVE_SUCCESS` action).
 - Hex deletion via clearing the input — empty TextInput dispatches `''`
   (not `'#'`), letting `COMMIT_EDIT` hit the deletion branch.
 

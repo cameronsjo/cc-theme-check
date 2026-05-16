@@ -64,32 +64,30 @@ That puts `cc-theme-check` on your `$PATH` globally. Or run without linking:
 node /path/to/cc-theme-check/src/cli.mjs
 ```
 
-### Optional: TUI forge dependencies
-
-The `--edit` mode opens an Ink-based TUI for interactive theme editing. It requires three optional peer dependencies — they are **not** installed by default to keep the verifier lean:
-
-```bash
-npm install -g ink react ink-text-input
-```
-
-Running `--edit` without these prints a clean install hint and exits. The verify, watch, and init modes work with chalk alone.
+`npm install` pulls everything needed: `chalk` for the verifier, plus `ink` / `react` / `ink-text-input` for the launcher and the forge TUI. There are no optional peer deps to install separately.
 
 ## Usage
 
 ```text
-cc-theme-check                          auto-discover active theme
-cc-theme-check path/to/my-theme.json    check a specific theme file
+cc-theme-check                          launcher TUI (or verify, if piped)
+cc-theme-check path/to/my-theme.json    check a specific theme file (skips launcher)
+cc-theme-check --verify                 one-shot verify (skip launcher)
+cc-theme-check --menu                   force launcher (even if piped)
 cc-theme-check --watch                  live reload on theme-file save
-cc-theme-check --edit                   interactive TUI forge (needs peer deps)
+cc-theme-check --edit                   interactive TUI forge
 cc-theme-check --init [slug]            scaffold a new theme from a template
 cc-theme-check --all                    show everything
 ```
+
+Run bare from an interactive terminal and you land in the **launcher TUI** — pick Verify, Watch, Forge, New theme, or Settings. Pipe the output (or pass `--verify`) and you get the one-shot verifier the old way. The bare-invocation routing follows the same TTY-detection pattern used by `lazygit`, `gh`, and modern `fzf` — see [ADR 0002](docs/adr/0002-launcher-as-primary-interface.md) for the details.
 
 ### Flags
 
 | Flag | What it shows |
 |---|---|
-| *(none)* | Header · mock conversation · 3-line contrast summary |
+| *(none)* | Launcher TUI (TTY) · one-shot verify (piped) |
+| `--verify` | One-shot verify, even in a TTY (skip launcher) |
+| `--menu` | Open launcher TUI explicitly (even when piped) |
 | `--audit` | Full WCAG breakdown with every failure listed |
 | `--palette` | ANSI 16-color grid (requires `--ghostty`) |
 | `--tokens` | All 69 tokens with colored swatches and contrast ratios |
@@ -100,12 +98,38 @@ cc-theme-check --all                    show everything
 | `--ghostty <path>` | Provide Ghostty theme for accurate canvas bg + ANSI palette |
 | `--bg <#hex>` | Override canvas bg for contrast math |
 
+### Launcher
+
+Running bare from a TTY opens the launcher TUI — a one-keypress menu over Verify / Watch / Forge / New theme, plus a Settings pane that edits `~/.config/cc-theme-check/config.json` interactively.
+
+```
+┌ cc-theme-check ────────────────────────────────────────────┐
+│ ✦ Theme: artificer  (~/.claude/themes/artificer.json)     │
+│ Terminal: Ghostty · tmux: yes (chalk clamps to 256)       │
+│ Ghostty theme: artificer-dark  · canvas bg: #1a1d2e       │
+├────────────────────────────────────────────────────────────┤
+│ MODE                                                        │
+│ ❯ Verify                  One-shot render + WCAG summary    │
+│   Watch                   Live reload on theme-file save    │
+│   Forge                   Interactive TUI editor            │
+│   New theme…              Scaffold from boring-grey template│
+│                                                             │
+│   Settings                Configure defaults                │
+│   Quit                                                      │
+└────────────────────────────────────────────────────────────┘
+  [j/k] nav  [enter] run  [s] settings  [q] quit
+```
+
+Keybinds: `j`/`k` (or arrows) move, `enter` runs, `s` opens Settings, `q` quits. Inside Settings: `enter` edits, `d` deletes (reverts to autodetect/default), `s` saves, `esc` back.
+
+The launcher only opens when stdin **and** stdout are TTYs. Pipe the output (`cc-theme-check | grep FAIL`), pass a theme path, or use any mode flag (`--watch`, `--edit`, `--verify`, …) and you get the one-shot verifier as before. Force the launcher even when piped with `--menu`; force one-shot inside a TTY with `--verify`.
+
 ### Examples
 
-**Quickly verify your theme didn't break anything:**
+**Quickly verify your theme didn't break anything** (skip the launcher):
 
 ```bash
-cc-theme-check
+cc-theme-check --verify
 ```
 
 **Hunt down a specific contrast failure:**
@@ -144,7 +168,7 @@ Watches the active theme file and re-renders on every save. Edit `theme.json` in
 cc-theme-check --edit
 ```
 
-Opens an Ink-based side-by-side editor: token list on the left, live preview on the right, hex-entry row at the bottom with WCAG feedback as you type. Requires the optional peer deps (see Install).
+Opens an Ink-based side-by-side editor: token list on the left, live preview on the right, hex-entry row at the bottom with WCAG feedback as you type.
 
 #### Forge keybinds
 

@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Launcher TUI**: bare `cc-theme-check` now opens an interactive menu
+  in a TTY — pick Verify, Watch, Forge, New theme, or Settings without
+  remembering flags. Pipes and scripts still get the one-shot verifier
+  via TTY detection (`process.stdin.isTTY && process.stdout.isTTY`),
+  matching the pattern used by `lazygit`, `gh`, and modern `fzf`. See
+  [ADR 0002](docs/adr/0002-launcher-as-primary-interface.md).
+- **Settings pane** inside the launcher: edits
+  `~/.config/cc-theme-check/config.json` with vim-style navigation,
+  inline hex/text entry, boolean toggles, and live source labels
+  (`flag` / `settings*` / `autodetect` / `default`) so you can see which
+  override is winning. `[s]` saves, `[d]` reverts a field, `[esc]`
+  returns to the menu.
+- `--verify` flag: force one-shot verify even inside a TTY (skip the
+  launcher).
+- `--menu` flag: force the launcher even when piped (e.g. for demos).
 - **Autodetect**: `cc-theme-check` now reads `~/.config/ghostty/config`
   automatically to pick up the active Ghostty theme — `--ghostty <path>`
   becomes optional when you have a `theme = <name>` line. Terminal name
@@ -55,6 +70,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Ink is now a hard dependency.** `ink`, `react`, and `ink-text-input`
+  moved from `peerDependenciesMeta` optionals to required `dependencies`
+  in `package.json`. `npm install cc-theme-check` pulls everything for
+  every mode — no more "install peer deps for `--edit`" hint. Install
+  footprint grew from ~200 KB to ~6 MB; the discoverability win is worth
+  the bytes for a developer tool. Anyone who had been running with peer
+  deps unset will get Ink on next install — no code break.
 - Token coverage in the default mock conversation: ~15 → ~35 of the named
   catalog tokens are now exercised, so the contrast summary reflects what
   users actually see.

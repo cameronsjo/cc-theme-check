@@ -13,10 +13,10 @@ export async function launchMenu({ resolved }) {
   const settings = await loadConfig();
 
   return new Promise((resolve) => {
-    let resolved_ = false;
+    let done = false;
     const finish = (choice) => {
-      if (resolved_) return;
-      resolved_ = true;
+      if (done) return;
+      done = true;
       debug('menu choice', { action: choice.action });
       unmount();
       resolve(choice);

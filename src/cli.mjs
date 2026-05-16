@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chalk } from './colorize.mjs';
 import { debug } from './debug.mjs';
 import { discoverTheme } from './discover.mjs';
@@ -78,7 +79,7 @@ function parseArgs(argv) {
 // are both TTY and the user didn't pass any explicit mode flag or theme
 // arg — keeping the tool scriptable. `--menu` forces the launcher even
 // when piped; `--verify` forces one-shot even in a TTY.
-function shouldOpenMenu(raw) {
+export function shouldOpenMenu(raw) {
   if (raw.menu) return true;
   if (raw.verify) return false;
   if (raw.watch || raw.edit || raw.init) return false;
@@ -137,8 +138,11 @@ async function main() {
   runOnce(themePath, opts);
 }
 
-main().catch((err) => {
-  debug('cli error', { error: err.message });
-  console.error(err);
-  process.exit(1);
-});
+// Only auto-run when invoked as a script (not when imported by tests).
+if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    debug('cli error', { error: err.message });
+    console.error(err);
+    process.exit(1);
+  });
+}
