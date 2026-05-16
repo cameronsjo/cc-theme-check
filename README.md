@@ -76,7 +76,7 @@ Running `--edit` without these prints a clean install hint and exits. The verify
 
 ## Usage
 
-```
+```text
 cc-theme-check                          auto-discover active theme
 cc-theme-check path/to/my-theme.json    check a specific theme file
 cc-theme-check --watch                  live reload on theme-file save
