@@ -2,6 +2,7 @@
 import { resolve } from 'node:path';
 import { chalk } from './colorize.mjs';
 import { discoverTheme } from './discover.mjs';
+import { resolveOptions } from './options.mjs';
 import { runOnce } from './render-all.mjs';
 
 function showHelp() {
@@ -66,14 +67,15 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  const opts = parseArgs(process.argv);
+  const raw = parseArgs(process.argv);
 
-  if (opts.init) {
+  if (raw.init) {
     const { runInit } = await import('./init.mjs');
-    await runInit(opts.initSlug);
+    await runInit(raw.initSlug);
     return;
   }
 
+  const opts = await resolveOptions(raw);
   const themePath = opts.themePath ? resolve(opts.themePath) : discoverTheme().themePath;
 
   if (opts.edit) {

@@ -29,7 +29,7 @@ export function runOnce(themePath, opts) {
   const ghosttyTheme = opts.ghosttyPath ? loadGhosttyTheme(opts.ghosttyPath) : null;
   const canvasBg = resolveCanvasBg(opts, raw, ghosttyTheme);
 
-  renderHeader(raw.name, raw.base, absPath, overrideCount);
+  renderHeader(raw.name, raw.base, absPath, overrideCount, opts.autodetect);
   renderConversation(overrides, canvasBg, ghosttyTheme);
   renderContrastSummary();
 
