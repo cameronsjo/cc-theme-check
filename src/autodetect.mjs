@@ -5,6 +5,8 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { parseIniLine } from './ini.mjs';
+import { debug } from './debug.mjs';
 
 function ghosttyConfigPath() {
   return join(homedir(), '.config', 'ghostty', 'config');
@@ -14,31 +16,43 @@ function ghosttyThemesDir() {
   return join(homedir(), '.config', 'ghostty', 'themes');
 }
 
-// Parse ~/.config/ghostty/config and find:
-//   theme = <name>            → resolve against ~/.config/ghostty/themes/<name>
-//   theme = /abs/path         → use directly
-// Returns { themeName, path, configPath } or null if config absent / no theme line.
+// Resolve a Ghostty theme reference (absolute path OR theme name in the
+// user's themes dir) to an absolute file path, or null if it can't be
+// found. Exported so settings-driven resolution in options.mjs doesn't
+// re-implement the path math.
+export function resolveGhosttyThemeName(value) {
+  if (!value) return null;
+  // Absolute path: pass through unconditionally — the user is being
+  // explicit, and downstream loadGhosttyTheme() will surface a clear
+  // error if the file is missing. Name-in-themes-dir validates because
+  // a typo should fall through to autodetect, not crash later.
+  if (value.startsWith('/')) return value;
+  const path = join(ghosttyThemesDir(), value);
+  return existsSync(path) ? path : null;
+}
+
 export function detectGhosttyTheme() {
   const configPath = ghosttyConfigPath();
-  if (!existsSync(configPath)) return null;
+  debug('autodetect ghostty start', { configPath });
   let lines;
   try {
     lines = readFileSync(configPath, 'utf8').split('\n');
-  } catch {
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      debug('ghostty config not found', { configPath });
+      return null;
+    }
+    debug('ghostty config read failed', { configPath, error: err.message });
     return null;
   }
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const val = trimmed.slice(eq + 1).trim();
-    if (key !== 'theme' || !val) continue;
-    const path = val.startsWith('/') ? val : join(ghosttyThemesDir(), val);
-    if (!existsSync(path)) return { themeName: val, path: null, configPath };
-    return { themeName: val, path, configPath };
+    const parsed = parseIniLine(line);
+    if (!parsed || parsed.key !== 'theme' || !parsed.value) continue;
+    const path = resolveGhosttyThemeName(parsed.value);
+    debug('autodetect ghostty ok', { themeName: parsed.value, hasPath: !!path });
+    return { themeName: parsed.value, path, configPath };
   }
+  debug('autodetect ghostty no theme found', { configPath });
   return null;
 }
 

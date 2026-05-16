@@ -1,6 +1,7 @@
 // Single-pass render of every section in the order cli.mjs uses.
 // Exported so watch.mjs and forge/ can call the same render without
 // duplicating the orchestration logic.
+import { debug } from './debug.mjs';
 import { loadTheme } from './discover.mjs';
 import { loadGhosttyTheme } from './ghostty.mjs';
 import { resetAudit } from './contrast.mjs';
@@ -20,6 +21,7 @@ export function resolveCanvasBg(opts, raw, ghosttyTheme) {
 }
 
 export function runOnce(themePath, opts) {
+  debug('runOnce start', { themePath });
   resetAudit();
 
   const { raw, absPath } = loadTheme(themePath);
@@ -28,6 +30,17 @@ export function runOnce(themePath, opts) {
 
   const ghosttyTheme = opts.ghosttyPath ? loadGhosttyTheme(opts.ghosttyPath) : null;
   const canvasBg = resolveCanvasBg(opts, raw, ghosttyTheme);
+
+  debug('render orchestration', {
+    themeName: raw.name,
+    base: raw.base,
+    overrideCount,
+    hasGhosttyTheme: !!ghosttyTheme,
+    canvasBg,
+    audit: opts.audit,
+    palette: opts.palette,
+    tokens: opts.tokens,
+  });
 
   renderHeader(raw.name, raw.base, absPath, overrideCount, opts.autodetect);
   renderConversation(overrides, canvasBg, ghosttyTheme);
@@ -38,4 +51,5 @@ export function runOnce(themePath, opts) {
   if (opts.audit) renderAudit(canvasBg);
 
   renderFooter(raw.name);
+  debug('runOnce ok', { themeName: raw.name });
 }

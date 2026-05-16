@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Autodetect**: `cc-theme-check` now reads `~/.config/ghostty/config`
+  automatically to pick up the active Ghostty theme — `--ghostty <path>`
+  becomes optional when you have a `theme = <name>` line. Terminal name
+  (from `$TERM_PROGRAM`) and tmux state (from `$TMUX`) surface in the
+  header as dimmed context lines.
+- **Persistent settings** at `~/.config/cc-theme-check/config.json`
+  (respects `$XDG_CONFIG_HOME`). All keys optional:
+  `ghosttyTheme` (path or theme-name), `bgOverride` (#hex),
+  `themePath` (override Claude Code auto-discovery),
+  `defaultFlags` (`{ audit?, palette?, tokens?, all? }`). Missing file
+  is a first-run path — treated as `{}`, never an error.
+- **Precedence resolver** in `src/options.mjs`: every user-tweakable
+  field walks `CLI flag > settings > autodetect > default`. The
+  resolved bag also exposes a `sources` map so the upcoming launcher
+  UI can label which override won.
+- **Shared INI parser** at `src/ini.mjs::parseIniLine(line)`. Both
+  `autodetect.mjs` (parsing `~/.config/ghostty/config`) and
+  `ghostty.mjs` (parsing theme files) now use it — eliminates the
+  prior behavioral divergence where one parser silently skipped
+  `key=value` without spaces while the other accepted it.
 - `--watch` mode: live-reload the verifier on every theme-file save. Uses
   `fs.watch` on the parent directory + filename filter, so it survives
   editor-rename saves (write-to-`.tmp` + mv). Re-renders on terminal resize.

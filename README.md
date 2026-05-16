@@ -128,6 +128,8 @@ cc-theme-check --all --ghostty ~/.config/ghostty/themes/my-theme
 
 `--ghostty` matters because Claude Code reads the terminal's ANSI palette for several surfaces (code highlighting, dim comments, etc.). Without it, the tool falls back to reasonable defaults but won't match what you see in your actual terminal.
 
+`--ghostty` is **optional** if you already have `theme = <name>` in `~/.config/ghostty/config` — the verifier autodetects it and resolves the path against `~/.config/ghostty/themes/`. Pass `--ghostty` explicitly to override or to point at a theme outside the standard location.
+
 **Live-reload while you tune:**
 
 ```bash
@@ -172,6 +174,30 @@ cc-theme-check --init my-theme-slug
 ```
 
 Writes `~/.claude/themes/my-theme-slug.json` with all 48 catalog tokens pre-populated using monochrome greys (no semantic color — you choose). Optionally rewires `~/.claude/settings.json` to point at the new theme. Hands off to `--edit` or `--watch` afterwards.
+
+## Settings
+
+`cc-theme-check` reads persistent settings from `~/.config/cc-theme-check/config.json` (or `$XDG_CONFIG_HOME/cc-theme-check/config.json` if that's set). The file is plain JSON; every key is optional; a missing file is treated as `{}` and is not an error.
+
+Schema:
+
+| Key | Type | Purpose |
+|---|---|---|
+| `ghosttyTheme` | string | Path or theme-name (resolved against `~/.config/ghostty/themes/<name>`). Skips autodetection. |
+| `bgOverride` | string | Hex color (e.g. `"#1a1d2e"`) — wins over autodetected canvas bg. |
+| `themePath` | string | Override Claude Code theme auto-discovery. |
+| `defaultFlags` | object | `{ audit?, palette?, tokens?, all? }` — turn flags on by default. |
+
+Precedence for every field: **CLI flag > settings file > autodetect > default.** Pass `--ghostty <path>` once and it always wins over the settings entry, which always wins over what's in `~/.config/ghostty/config`.
+
+Example — auto-enable the full audit on every run:
+
+```json
+{
+  "defaultFlags": { "all": true },
+  "ghosttyTheme": "artificer-dark"
+}
+```
 
 ## How it works
 

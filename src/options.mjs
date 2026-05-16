@@ -8,13 +8,12 @@
 //   - autodetect: { ghostty, terminal }  for the header to surface
 //   - sources:    { field: 'flag'|'settings'|'autodetect'|'default' }
 //                 for the Settings UI to label which override wins
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { loadConfig } from './config.mjs';
-import { detectGhosttyTheme, detectTerminal } from './autodetect.mjs';
+import { detectGhosttyTheme, detectTerminal, resolveGhosttyThemeName } from './autodetect.mjs';
+import { debug } from './debug.mjs';
 
 export async function resolveOptions(rawCli) {
+  debug('resolveOptions start', {});
   const settings = await loadConfig();
   const ghostty = detectGhosttyTheme();
   const terminal = detectTerminal();
@@ -30,7 +29,7 @@ export async function resolveOptions(rawCli) {
 
   const ghosttyPath = pick('ghosttyPath',
     rawCli.ghosttyPath,
-    resolveGhosttyFromSettings(settings.ghosttyTheme),
+    resolveGhosttyThemeName(settings.ghosttyTheme),
     ghostty?.path,
   );
   const bgOverride = pick('bgOverride', rawCli.bgOverride, settings.bgOverride, null);
@@ -45,7 +44,7 @@ export async function resolveOptions(rawCli) {
     return false;
   };
 
-  return {
+  const result = {
     ...rawCli,
     ghosttyPath, bgOverride, themePath,
     audit:   flagOn('audit'),
@@ -54,14 +53,15 @@ export async function resolveOptions(rawCli) {
     autodetect: { ghostty, terminal },
     sources,
   };
-}
 
-// settings.ghosttyTheme is either an absolute path or a theme-name to
-// resolve against ~/.config/ghostty/themes/. Returns null if the file
-// can't be found — caller falls back to autodetect or default.
-function resolveGhosttyFromSettings(value) {
-  if (!value) return null;
-  if (value.startsWith('/')) return value;
-  const path = join(homedir(), '.config', 'ghostty', 'themes', value);
-  return existsSync(path) ? path : null;
+  debug('resolveOptions ok', {
+    ghosttyPathSource: sources.ghosttyPath,
+    bgOverrideSource: sources.bgOverride,
+    themePathSource: sources.themePath,
+    audit: result.audit,
+    palette: result.palette,
+    tokens: result.tokens,
+  });
+
+  return result;
 }

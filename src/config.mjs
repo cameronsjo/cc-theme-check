@@ -11,6 +11,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { debug } from './debug.mjs';
 
 function xdgConfigHome() {
   return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
@@ -21,16 +22,31 @@ export function configPath() {
 }
 
 export async function loadConfig() {
+  const path = configPath();
+  debug('config load start', { path });
   try {
-    return JSON.parse(await readFile(configPath(), 'utf8'));
+    const cfg = JSON.parse(await readFile(path, 'utf8'));
+    debug('config load ok', { path, keys: Object.keys(cfg).length });
+    return cfg;
   } catch (err) {
-    if (err.code === 'ENOENT') return {};
+    if (err.code === 'ENOENT') {
+      debug('config not found, first run', { path });
+      return {};
+    }
+    debug('config load failed', { path, error: err.message });
     throw err;
   }
 }
 
 export async function saveConfig(next) {
   const path = configPath();
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify(next, null, 2) + '\n', 'utf8');
+  debug('config save start', { path, keys: Object.keys(next).length });
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, JSON.stringify(next, null, 2) + '\n', 'utf8');
+    debug('config save ok', { path });
+  } catch (err) {
+    debug('config save failed', { path, error: err.message });
+    throw err;
+  }
 }

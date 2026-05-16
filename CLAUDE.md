@@ -15,9 +15,13 @@ default install stays chalk-only. Entry point at `src/cli.mjs`
 src/
   cli.mjs           Entry: arg parsing, mode routing (lazy-loads watch/forge/init)
   colorize.mjs      chalk pipeline (mirror of Claude Code's colorize.ts)
+  config.mjs        Load/save ~/.config/cc-theme-check/config.json (XDG-aware)
+  autodetect.mjs    Read ~/.config/ghostty/config + $TERM_PROGRAM/$TMUX
+  options.mjs       Precedence resolver: flag > settings > autodetect > default
+  ini.mjs           Shared parseIniLine(line) used by autodetect + ghostty
   contrast.mjs      sRGB linearization + WCAG ratio + audit log + wcagBucket
   discover.mjs      Auto-discover active theme from ~/.claude/settings.json
-  ghostty.mjs       Parse Ghostty theme INI files
+  ghostty.mjs       Parse Ghostty theme INI files (via ini.mjs)
   render-all.mjs    Shared render orchestration (runOnce + resolveCanvasBg)
   watch.mjs         --watch: fs.watch loop with debounce + resize re-render
   init.mjs          --init: TTY-aware prompter + template scaffolding
@@ -29,7 +33,7 @@ src/
     components/     Ink components: Forge, TokenList, Preview, EditRow, HelpFooter
   render/
     layout.mjs      WIDTH constant, stripAnsi/pad/rule/sectionHeader/glyphs
-    header.mjs      Box-drawing header
+    header.mjs      Box-drawing header (surfaces autodetect lines)
     conversation.mjs  Mock Claude Code conversation (platform-aware glyphs)
     palette.mjs     ANSI 16-color grid + mock terminal content
     tokens.mjs      All 69 tokens with swatches
@@ -97,6 +101,33 @@ upstream changes how it boosts/clamps chalk levels, update both
 `boostChalkLevelForXtermJs()` and `clampChalkLevelForTmux()` to match.
 The header banner in `render/header.mjs` reports the resolved level,
 which is the user-visible signal that something is off.
+
+## Settings + autodetect
+
+`cc-theme-check` resolves every user-tweakable value through a precedence
+chain in `src/options.mjs::resolveOptions()`:
+
+```
+CLI flag  >  settings file  >  autodetect  >  default
+```
+
+- **Settings** live at `~/.config/cc-theme-check/config.json` (respects
+  `$XDG_CONFIG_HOME`). `src/config.mjs` handles load/save; missing file
+  is a first-run path (`{}`), never an error.
+- **Autodetect** in `src/autodetect.mjs` reads
+  `~/.config/ghostty/config` for the active `theme = <name>` line,
+  resolves the name against `~/.config/ghostty/themes/`, and sniffs
+  `$TERM_PROGRAM` + `$TMUX` for the header.
+- `resolveOptions` returns the raw CLI opts merged with the resolved
+  values, plus an `autodetect: { ghostty, terminal }` bag for the
+  header to surface and a `sources` map for the upcoming launcher UI
+  to label which override won.
+
+**Shared INI parser.** Both `ghostty.mjs` (theme files) and
+`autodetect.mjs` (Ghostty config) parse the same `key = value` line
+format. The helper lives in `src/ini.mjs::parseIniLine(line)` — splits
+on the first `=`, trims both sides, skips `#` comments and blank
+lines. Don't reintroduce a divergent inline parser.
 
 ## Forge modes
 

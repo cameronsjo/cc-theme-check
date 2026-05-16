@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from 'node:path';
 import { chalk } from './colorize.mjs';
+import { debug } from './debug.mjs';
 import { discoverTheme } from './discover.mjs';
 import { resolveOptions } from './options.mjs';
 import { runOnce } from './render-all.mjs';
@@ -67,9 +68,11 @@ function parseArgs(argv) {
 }
 
 async function main() {
+  debug('cli start', {});
   const raw = parseArgs(process.argv);
 
   if (raw.init) {
+    debug('init mode requested', { initSlug: raw.initSlug ?? 'none' });
     const { runInit } = await import('./init.mjs');
     await runInit(raw.initSlug);
     return;
@@ -77,29 +80,39 @@ async function main() {
 
   const opts = await resolveOptions(raw);
   const themePath = opts.themePath ? resolve(opts.themePath) : discoverTheme().themePath;
+  debug('theme path resolved', { themePath, source: opts.themePath ? 'explicit' : 'discovered' });
 
   if (opts.edit) {
+    debug('edit mode requested', { themePath });
     try {
       const { launchForge } = await import('./forge/index.mjs');
       await launchForge({ themePath, opts });
     } catch (err) {
       if (err.code === 'ERR_MODULE_NOT_FOUND') {
+        debug('edit mode missing dependencies', {});
         process.stderr.write(`${chalk.red('--edit requires ink, react, and ink-text-input.')}\n`);
         process.stderr.write(`Install with:  ${chalk.bold('npm install -g ink react ink-text-input')}\n`);
         process.exit(1);
       }
+      debug('edit mode launch failed', { error: err.message });
       throw err;
     }
     return;
   }
 
   if (opts.watch) {
+    debug('watch mode requested', { themePath });
     const { watchAndRender } = await import('./watch.mjs');
     await watchAndRender(themePath, opts);
     return;
   }
 
+  debug('verify mode', { themePath });
   runOnce(themePath, opts);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+  debug('cli error', { error: err.message });
+  console.error(err);
+  process.exit(1);
+});
