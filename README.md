@@ -6,7 +6,14 @@ Verify your Claude Code theme renders the way you expect — without restarting 
 cc-theme-check
 ```
 
-Auto-discovers your active theme from `~/.claude/settings.json`, renders a mock conversation using the **same chalk pipeline Claude Code uses internally**, and reports a 3-line WCAG contrast summary.
+> **New in 0.2.0** — Bare `cc-theme-check` now opens a launcher TUI in
+> interactive terminals (Verify, Watch, Forge, New theme, Settings).
+> Pipes and scripts still get the one-shot verifier via TTY detection.
+> See [Launcher](#launcher) for keybinds. Persistent settings live at
+> `~/.config/cc-theme-check/config.json` and are editable from the
+> Settings pane.
+
+Auto-discovers your active theme from `~/.claude/settings.json`, renders a mock conversation using the **same chalk pipeline Claude Code uses internally**, and reports a 3-line WCAG contrast summary. The shared chalk-render core is captured for the launcher and forge to reuse — see [ADR 0001](docs/adr/0001-shared-render-core-via-captured-stdout.md).
 
 ```
   You: Help me fix the parser. Please ultrathink this one.
