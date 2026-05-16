@@ -84,19 +84,8 @@ async function main() {
 
   if (opts.edit) {
     debug('edit mode requested', { themePath });
-    try {
-      const { launchForge } = await import('./forge/index.mjs');
-      await launchForge({ themePath, opts });
-    } catch (err) {
-      if (err.code === 'ERR_MODULE_NOT_FOUND') {
-        debug('edit mode missing dependencies', {});
-        process.stderr.write(`${chalk.red('--edit requires ink, react, and ink-text-input.')}\n`);
-        process.stderr.write(`Install with:  ${chalk.bold('npm install -g ink react ink-text-input')}\n`);
-        process.exit(1);
-      }
-      debug('edit mode launch failed', { error: err.message });
-      throw err;
-    }
+    const { launchForge } = await import('./forge/index.mjs');
+    await launchForge({ themePath, opts });
     return;
   }
 
