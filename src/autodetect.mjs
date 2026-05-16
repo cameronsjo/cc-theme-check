@@ -4,7 +4,7 @@
 // option resolver picks the next fallback in the precedence chain).
 import { readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { parseIniLine } from './ini.mjs';
 import { debug } from './debug.mjs';
 
@@ -26,7 +26,8 @@ export function resolveGhosttyThemeName(value) {
   // explicit, and downstream loadGhosttyTheme() will surface a clear
   // error if the file is missing. Name-in-themes-dir validates because
   // a typo should fall through to autodetect, not crash later.
-  if (value.startsWith('/')) return value;
+  // isAbsolute() handles both POSIX (/foo) and Windows (C:\foo).
+  if (isAbsolute(value)) return value;
   const path = join(ghosttyThemesDir(), value);
   return existsSync(path) ? path : null;
 }

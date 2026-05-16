@@ -39,6 +39,8 @@ export function StatusBar({ resolved }) {
       h(Text, { bold: true }, 'Theme: '),
       h(Text, null, theme.label),
       theme.path && h(Text, { dimColor: true }, `  (${theme.path})`),
+      sources?.themePath && sources.themePath !== 'default' &&
+        h(Text, { dimColor: true }, `  (via ${sources.themePath})`),
     ),
 
     // Row 2 — Terminal + tmux
@@ -56,6 +58,8 @@ export function StatusBar({ resolved }) {
     ghostty?.themeName && h(Box, { key: 'ghostty' },
       h(Text, { bold: true }, 'Ghostty theme: '),
       h(Text, null, ghostty.themeName),
+      sources?.ghosttyPath && sources.ghosttyPath !== 'default' &&
+        h(Text, { dimColor: true }, `  (via ${sources.ghosttyPath})`),
       bgOverride && h(React.Fragment, { key: 'bg' },
         h(Text, { dimColor: true }, '  ·  '),
         h(Text, { bold: true }, 'canvas bg: '),

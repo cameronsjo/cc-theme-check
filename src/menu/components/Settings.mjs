@@ -207,7 +207,7 @@ function StatusLine({ saveState }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function Settings({ resolved, settings, onClose }) {
+export function Settings({ resolved, settings, onClose, onSaved }) {
   const [state, dispatch] = React.useReducer(reducer, { settings }, initialState);
   const saveInFlightRef   = React.useRef(false);
   const timerRef          = React.useRef(null);
@@ -254,6 +254,9 @@ export function Settings({ resolved, settings, onClose }) {
         () => {
           saveInFlightRef.current = false;
           dispatch({ type: 'SAVE_SUCCESS', snapshot });
+          // Bubble the persisted snapshot up so the launcher's settings
+          // mirror stays fresh — otherwise close+re-open shows stale values.
+          onSaved?.(snapshot);
         },
         (err) => {
           saveInFlightRef.current = false;

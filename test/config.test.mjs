@@ -158,4 +158,31 @@ describe('saveConfig()', () => {
     const result = await loadConfig();
     assert.deepEqual(result, { a: 1 });
   });
+
+  test('rejects non-object payloads with TypeError (guards against null / arrays / scalars)', async () => {
+    process.env.XDG_CONFIG_HOME = tmpDir;
+    for (const bad of [null, [1, 2], 'string', 42, true]) {
+      await assert.rejects(() => saveConfig(bad), TypeError);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadConfig() — shape guard
+// ---------------------------------------------------------------------------
+
+describe('loadConfig() shape guard', () => {
+  beforeEach(setupTmpDir);
+  afterEach(teardownTmpDir);
+
+  test('returns {} when JSON parses to a non-object (null / array / scalar)', async () => {
+    process.env.XDG_CONFIG_HOME = tmpDir;
+    const configDir = join(tmpDir, 'cc-theme-check');
+    mkdirSync(configDir, { recursive: true });
+    for (const bad of ['null', '[1,2,3]', '"hello"', '42', 'true']) {
+      writeFileSync(join(configDir, 'config.json'), bad);
+      const result = await loadConfig();
+      assert.deepEqual(result, {}, `non-object payload ${bad} should fall back to {}`);
+    }
+  });
 });

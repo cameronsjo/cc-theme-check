@@ -44,6 +44,9 @@ export function Menu({ resolved, settings, onChoice }) {
   const { exit } = useApp();
   const [pane, setPane] = React.useState('menu');
   const [cursor, setCursor] = React.useState(SELECTABLE[0]);
+  // Mirror the saved-config snapshot so a save + close + re-open Settings
+  // initializes from fresh values rather than the stale prop.
+  const [settingsState, setSettingsState] = React.useState(settings);
 
   useInput((input, key) => {
     if (pane === 'settings') return; // Settings owns its own input.
@@ -82,7 +85,8 @@ export function Menu({ resolved, settings, onChoice }) {
   if (pane === 'settings') {
     return h(Settings, {
       resolved,
-      settings,
+      settings: settingsState,
+      onSaved: setSettingsState,
       onClose: () => {
         debug('pane transition', { from: 'settings', to: 'menu' });
         setPane('menu');

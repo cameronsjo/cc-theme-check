@@ -17,6 +17,10 @@ function xdgConfigHome() {
   return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 export function configPath() {
   return join(xdgConfigHome(), 'cc-theme-check', 'config.json');
 }
@@ -26,6 +30,11 @@ export async function loadConfig() {
   debug('config load start', { path });
   try {
     const cfg = JSON.parse(await readFile(path, 'utf8'));
+    if (!isPlainObject(cfg)) {
+      // Treat null / arrays / scalars as first-run rather than crashing.
+      debug('config not a plain object, ignoring', { path, type: Array.isArray(cfg) ? 'array' : typeof cfg });
+      return {};
+    }
     debug('config load ok', { path, keys: Object.keys(cfg).length });
     return cfg;
   } catch (err) {
@@ -39,6 +48,9 @@ export async function loadConfig() {
 }
 
 export async function saveConfig(next) {
+  if (!isPlainObject(next)) {
+    throw new TypeError('saveConfig(next) expects a JSON object');
+  }
   const path = configPath();
   debug('config save start', { path, keys: Object.keys(next).length });
   try {

@@ -13,7 +13,7 @@ forge TUI — all hard `dependencies`. Entry point at `src/cli.mjs`
 [ADR 0002](docs/adr/0002-launcher-as-primary-interface.md) for the
 launcher + dep-posture decision.
 
-```
+```text
 src/
   cli.mjs           Entry: arg parsing, TTY-aware mode routing (--verify, --menu)
   colorize.mjs      chalk pipeline (mirror of Claude Code's colorize.ts)
@@ -115,7 +115,7 @@ which is the user-visible signal that something is off.
 `cc-theme-check` resolves every user-tweakable value through a precedence
 chain in `src/options.mjs::resolveOptions()`:
 
-```
+```text
 CLI flag  >  settings file  >  autodetect  >  default
 ```
 
@@ -128,8 +128,8 @@ CLI flag  >  settings file  >  autodetect  >  default
   `$TERM_PROGRAM` + `$TMUX` for the header.
 - `resolveOptions` returns the raw CLI opts merged with the resolved
   values, plus an `autodetect: { ghostty, terminal }` bag for the
-  header to surface and a `sources` map for the upcoming launcher UI
-  to label which override won.
+  header to surface and a `sources` map that the launcher UI uses to
+  label which override won.
 
 **Shared INI parser.** Both `ghostty.mjs` (theme files) and
 `autodetect.mjs` (Ghostty config) parse the same `key = value` line

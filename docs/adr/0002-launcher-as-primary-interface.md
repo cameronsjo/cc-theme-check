@@ -32,7 +32,7 @@ ink-text-input move from optional peer-deps to required dependencies.**
 
 ### Bare-invocation routing
 
-```
+```text
 $ cc-theme-check                  → launcher TUI (TTY)
 $ cc-theme-check | grep FAIL      → one-shot verify (piped — !isTTY)
 $ cc-theme-check artificer.json   → one-shot verify (positional arg)

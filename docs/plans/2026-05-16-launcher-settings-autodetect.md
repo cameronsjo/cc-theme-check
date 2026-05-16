@@ -107,7 +107,7 @@ fine.
 Encapsulate in a small helper used by `cli.mjs`, `watch.mjs`, and the
 launcher:
 
-```
+```text
 ghosttyPath: CLI flag > settings > autodetect > null
 bgOverride:  CLI flag > settings > autodetect (Ghostty bg) > null
 themePath:   CLI positional > settings > discoverTheme()
@@ -124,7 +124,7 @@ the raw inputs.
 
 `src/render/header.mjs` gains two extra lines:
 
-```
+```text
   Terminal: Ghostty 1.2  ·  tmux: yes (chalk clamps to 256)
   Ghostty theme: artificer-dark (~/.config/ghostty/themes/artificer-dark)
 ```
@@ -168,7 +168,7 @@ launched from the menu.
 
 ### Behavior
 
-```
+```text
 $ cc-theme-check                  → launcher TUI (TTY)
 $ cc-theme-check | grep FAIL      → one-shot verify (piped — !isTTY)
 $ cc-theme-check artificer.json   → one-shot verify (positional arg)
@@ -183,7 +183,7 @@ TTY detection: `process.stdin.isTTY && process.stdout.isTTY`.
 
 ### Launcher layout
 
-```
+```text
 ┌─ cc-theme-check ──────────────────────────────────────────────────┐
 │ ✦ Theme: custom:artificer  (~/.claude/themes/artificer.json)      │
 │ Terminal: Ghostty 1.2  ·  tmux: yes (256)                         │
@@ -208,7 +208,7 @@ TTY detection: `process.stdin.isTTY && process.stdout.isTTY`.
 Editable field grid. Shows current value AND its source (flag / settings
 file / autodetect / default) so users see what's overriding what.
 
-```
+```text
 ┌─ Settings ─────────────────────────────────────────────────────────┐
 │ Field                  Value                       Source           │
 │ ─────                  ─────                       ──────           │
@@ -372,6 +372,7 @@ The cleanup pass that turns the merged work into a release.
 ## Critical files reference
 
 ### Modify
+
 - `src/cli.mjs` (104 lines) — TTY check, drop ERR_MODULE_NOT_FOUND block,
   add `--verify` / `--menu` flags, route through `resolveOptions()`
 - `src/render-all.mjs` — `resolveCanvasBg` consumes the resolved options
@@ -381,6 +382,7 @@ The cleanup pass that turns the merged work into a release.
 - `README.md`, `CLAUDE.md`, `CHANGELOG.md` — see per-phase notes
 
 ### Create
+
 - `src/config.mjs`, `src/autodetect.mjs`, `src/options.mjs` (Phase 1)
 - `src/menu/index.mjs` + 4 components (Phase 2)
 - `docs/adr/0002-launcher-as-primary-interface.md` (Phase 2)
@@ -388,6 +390,7 @@ The cleanup pass that turns the merged work into a release.
   `test/options.test.mjs`, `test/menu-state.test.mjs`
 
 ### Reuse unchanged
+
 - `src/discover.mjs` — `discoverTheme()`, `loadTheme()`
 - `src/ghostty.mjs` — `loadGhosttyTheme()` (parses theme files; the new
   config-file parsing lives in `src/autodetect.mjs`)

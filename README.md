@@ -109,7 +109,7 @@ Run bare from an interactive terminal and you land in the **launcher TUI** — p
 
 Running bare from a TTY opens the launcher TUI — a one-keypress menu over Verify / Watch / Forge / New theme, plus a Settings pane that edits `~/.config/cc-theme-check/config.json` interactively.
 
-```
+```text
 ┌ cc-theme-check ────────────────────────────────────────────┐
 │ ✦ Theme: artificer  (~/.claude/themes/artificer.json)     │
 │ Terminal: Ghostty · tmux: yes (chalk clamps to 256)       │

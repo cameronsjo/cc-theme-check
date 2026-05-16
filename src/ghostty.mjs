@@ -22,7 +22,10 @@ export function loadGhosttyTheme(ghosttyPath) {
       else if (key === 'foreground') result.foreground = '#' + value.replace('#', '');
       else if (key === 'palette') {
         const [pos, hex] = value.split('=');
-        if (pos !== undefined && hex !== undefined) result.palette[parseInt(pos, 10)] = '#' + hex.replace('#', '');
+        const idx = Number.parseInt((pos ?? '').trim(), 10);
+        if (Number.isInteger(idx) && idx >= 0 && hex !== undefined) {
+          result.palette[idx] = '#' + hex.trim().replace('#', '');
+        }
       }
     }
     debug('ghostty load ok', {
