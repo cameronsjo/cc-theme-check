@@ -95,9 +95,9 @@ imports Ink/React unconditionally at the top level of `src/menu/index.mjs`.
   wrapper (`script`, `expect`) without a real piped stream may now
   open the launcher unexpectedly. `--verify` is the escape hatch.
 - **No more chalk-only fallback.** A user who wanted to use the
-  verifier on a system where Ink can't install (very old Node,
-  alpine without certain libs) has no path. We accept that cost —
-  Ink supports Node ≥18, which is our minimum anyway.
+  verifier on a system where Ink can't install (Node versions
+  below 18) has no path. We accept that cost — Ink supports
+  Node ≥18, which is our minimum anyway.
 
 ## Alternatives considered
 
