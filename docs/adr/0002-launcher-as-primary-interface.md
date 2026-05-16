@@ -33,14 +33,14 @@ ink-text-input move from optional peer-deps to required dependencies.**
 ### Bare-invocation routing
 
 ```text
-$ cc-theme-check                  → launcher TUI (TTY)
-$ cc-theme-check | grep FAIL      → one-shot verify (piped — !isTTY)
-$ cc-theme-check artificer.json   → one-shot verify (positional arg)
-$ cc-theme-check --verify         → one-shot verify (explicit flag)
-$ cc-theme-check --watch          → watch (existing flag — short-circuit)
-$ cc-theme-check --edit           → forge (existing flag — short-circuit)
-$ cc-theme-check --init           → init (existing flag — short-circuit)
-$ cc-theme-check --menu           → launcher (force, even when piped)
+cc-theme-check                  → launcher TUI (TTY)
+cc-theme-check | grep FAIL      → one-shot verify (piped — !isTTY)
+cc-theme-check artificer.json   → one-shot verify (positional arg)
+cc-theme-check --verify         → one-shot verify (explicit flag)
+cc-theme-check --watch          → watch (existing flag — short-circuit)
+cc-theme-check --edit           → forge (existing flag — short-circuit)
+cc-theme-check --init           → init (existing flag — short-circuit)
+cc-theme-check --menu           → launcher (force, even when piped)
 ```
 
 TTY detection: `process.stdin.isTTY && process.stdout.isTTY`. Implementation
