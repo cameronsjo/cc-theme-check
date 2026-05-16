@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - `--watch` mode: live-reload the verifier on every theme-file save. Uses
   `fs.watch` on the parent directory + filename filter, so it survives
   editor-rename saves (write-to-`.tmp` + mv). Re-renders on terminal resize.
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   brief-mode speaker labels, and the ultrathink rainbow.
 
 ### Changed
+
 - Token coverage in the default mock conversation: ~15 → ~35 of the named
   catalog tokens are now exercised, so the contrast summary reflects what
   users actually see.
@@ -40,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0]
 
 ### Added
+
 - Initial release — single-mode verifier with header, mock conversation, and
   3-line WCAG contrast summary. Flags: `--audit`, `--tokens`, `--palette`,
   `--all`, `--ghostty <path>`, `--bg <#hex>`.
