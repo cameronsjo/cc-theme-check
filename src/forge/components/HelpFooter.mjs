@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 
 const h = React.createElement;
 
-const KEYS = [
+const FORGE_KEYS = [
   ['j/k',   'move'],
   ['enter', 'edit'],
   ['esc',   'cancel'],
@@ -14,9 +14,9 @@ const KEYS = [
   ['q',     'quit'],
 ];
 
-export function HelpFooter() {
+export function HelpFooter({ keys = FORGE_KEYS } = {}) {
   return h(Box, { paddingX: 1 },
-    ...KEYS.map(([k, label], i) =>
+    ...keys.map(([k, label], i) =>
       h(Text, { key: k, dimColor: true },
         i > 0 ? '  ' : '',
         h(Text, { key: 'k', color: 'cyan' }, `[${k}]`),
